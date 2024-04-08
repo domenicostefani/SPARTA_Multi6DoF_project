@@ -107,8 +107,6 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     label_nIRpositions->setBounds (136, 139, 60, 20);
 
-
-    // SOURCE SLIDERS /////////////////////////////////////////////////////////////////////////////////////////////////
     SL_source_y.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_source_y.get());
     SL_source_y->setRange (0, 1, 0.001);
@@ -136,8 +134,6 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     SL_source_x->setBounds (144, 200, 48, 20);
 
-
-    // RECEIVER SLIDERS ///////////////////////////////////////////////////////////////////////////////////////////////
     SL_receiver_x.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_receiver_x.get());
     SL_receiver_x->setRange (0, 1, 0.001);
@@ -177,9 +173,9 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     label_receiverIdx->setBounds (200, 308, 48, 20);
 
-    // OSC PORT TEXT EDITOR ///////////////////////////////////////////////////////////////////////////////////////////
     te_oscport.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (te_oscport.get());
+    te_oscport->setTooltip (TRANS("OSC addresses: /xyz [m]; /quat [-1,1]; /xyzquat [m][-1, 1]; /ypr [deg]; /xyzypr [m][deg]."));
     te_oscport->setMultiLine (false);
     te_oscport->setReturnKeyStartsNewLine (false);
     te_oscport->setReadOnly (false);
@@ -192,9 +188,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     te_oscport->setText (TRANS("9000"));
 
     te_oscport->setBounds (344, 296, 42, 22);
-    te_oscport->setTooltip("OSC addresses: /xyz [m]; /quat [-1,1]; /xyzquat [m][-1, 1]; /ypr [deg]; /xyzypr [m][deg].");
 
-    // COMBO BOX //////////////////////////////////////////////////////////////////////////////////////////////////////
     CBviewMode.reset (new juce::ComboBox ("new combo box"));
     addAndMakeVisible (CBviewMode.get());
     CBviewMode->setEditableText (false);
@@ -205,8 +199,6 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     CBviewMode->setBounds (755, 38, 92, 16);
 
-
-    // Yaw, Pitch & Roll sliders //////////////////////////////////////////////////////////////////////////////////////
     s_yaw.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (s_yaw.get());
     s_yaw->setRange (-180, 180, 0.01);
@@ -246,8 +238,6 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     s_roll->setBounds (326, 396, 60, 68);
 
-
-    // Yaw, Pitch and Roll flip toggle button /////////////////////////////////////////////////////////////////////////
     t_flipYaw.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (t_flipYaw.get());
     t_flipYaw->setButtonText (juce::String());
@@ -603,13 +593,13 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 92+148, y = 1, width = 450, height = 32;
+        int x = 240, y = 1, width = 450, height = 32;
         juce::String text (TRANS("Multisource 6DoF Convolver with the MCFX convolution engine"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
         g.setColour (fillColour);
-        g.setFont (juce::Font (12.00f, juce::Font::plain));
+        g.setFont (juce::Font (12.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
         g.drawText (text, x, y, width, height,
                     juce::Justification::centredLeft, true);
     }
@@ -955,7 +945,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 71, y = 349, width = 270, height = 31;
+        int x = 50, y = 349, width = 310, height = 31;
         juce::String text (TRANS("Ambisonic Sound-Field Rotation [degrees]"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -1226,7 +1216,7 @@ void PluginEditor::timerCallback()
     label_filterLength->setText(String((float)tvconv_getIRLength(hTVC)/MAX((float)tvconv_getIRFs(hTVC),1/*avoid nan*/)), dontSendNotification);
     label_hostfs->setText(String(tvconv_getHostFs(hTVC)), dontSendNotification);
 
-    
+
     label_filterfs->setText(String(tvconv_getResampledIR(hTVC)?"*":"")+String(tvconv_getIRFs(hTVC)), dontSendNotification);
     if (tvconv_getResampledIR(hTVC))
         label_filterfs->setColour(Label::textColourId, Colours::orange);
@@ -1243,7 +1233,7 @@ void PluginEditor::timerCallback()
     if((tvconv_getNumIRs(hTVC) != 0) && (tvconv_getHostFs(hTVC)!=tvconv_getIRFs(hTVC))){
         if (tvconv_getResampledIR(hTVC))
             currentWarning = k_warning_irs_resampled;
-        else 
+        else
             currentWarning = k_warning_sampleRate_missmatch;
         repaint(0,0,getWidth(),32);
     }
@@ -1293,8 +1283,8 @@ void PluginEditor::refreshCoords()
         SL_receiver_x->setRange(tvconv_getMinDimension(hTVC, 0),
                                 tvconv_getMaxDimension(hTVC, 0),
                                 0.001);
-    } 
-    else 
+    }
+    else
     {
         SL_receiver_x->setEnabled(false);
     }
@@ -1324,7 +1314,7 @@ void PluginEditor::refreshCoords()
 
 
     // Get SOURCE position data from convolver and update sliders (XYZ)
-    
+
     //float sourcePosition = tvconv_getSourcePosition(hTVC, 0);
 
     SL_source_x->setRange(tvconv_getSourcePosition(hTVC, 0), tvconv_getSourcePosition(hTVC, 0)+1, 0.1);
@@ -1401,9 +1391,12 @@ BEGIN_JUCER_METADATA
     <TEXT pos="16 1 100 32" fill="solid: ffffffff" hasStroke="0" text="SPARTA|"
           fontname="Default font" fontsize="18.8" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="92 1 148 32" fill="solid: ffff00f4" hasStroke="0" text="6DoFconv"
+    <TEXT pos="92 1 148 32" fill="solid: ff8c00ff" hasStroke="0" text="Multi6DoFconv"
           fontname="Default font" fontsize="18.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
+    <TEXT pos="240 1 450 32" fill="solid: ffffffff" hasStroke="0" text="Multisource 6DoF Convolver with the MCFX convolution engine"
+          fontname="Default font" fontsize="12.0" kerning="0.0" bold="0"
+          italic="0" justification="33"/>
     <RECT pos="0 0 860 2" fill="solid: 61a52a" hasStroke="1" stroke="2, mitered, butt"
           strokeColour="solid: ffb9b9b9"/>
     <RECT pos="0 0 2 500" fill="solid: 61a52a" hasStroke="1" stroke="2, mitered, butt"
@@ -1415,7 +1408,7 @@ BEGIN_JUCER_METADATA
     <TEXT pos="18 86 115 30" fill="solid: ffffffff" hasStroke="0" text="Host Block Size:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="210 86 200 30" fill="solid: ffffffff" hasStroke="0" text="IR Length (s):"
+    <TEXT pos="210 86 200 30" fill="solid: ffffffff" hasStroke="0" text="IR Length [s]:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
     <TEXT pos="210 110 128 30" fill="solid: ffffffff" hasStroke="0" text="Filter Samplerate:"
@@ -1427,16 +1420,16 @@ BEGIN_JUCER_METADATA
     <TEXT pos="18 110 120 31" fill="solid: ffffffff" hasStroke="0" text="N# IR channels:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="71 34 270 31" fill="solid: ffffffff" hasStroke="0" text="Load IR dataset"
+    <TEXT pos="18 34 120 31" fill="solid: ffffffff" hasStroke="0" text="Load IR dataset"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
-          italic="0" justification="36" typefaceStyle="Bold"/>
+          italic="0" justification="33" typefaceStyle="Bold"/>
     <TEXT pos="18 134 200 30" fill="solid: ffffffff" hasStroke="0" text="N# IR positions:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="415 34 417 31" fill="solid: ffffffff" hasStroke="0" text="Coordinate View"
+    <TEXT pos="415 34 417 31" fill="solid: ffffffff" hasStroke="0" text="Coordinate View [m]"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="71 231 270 31" fill="solid: ffffffff" hasStroke="0" text="Target Listener Position"
+    <TEXT pos="71 231 270 31" fill="solid: ffffffff" hasStroke="0" text="Target Listener Position [m]"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
     <TEXT pos="18 193 121 30" fill="solid: ffffffff" hasStroke="0" text="Source Position:"
@@ -1454,7 +1447,7 @@ BEGIN_JUCER_METADATA
     <TEXT pos="343 263 91 35" fill="solid: ffffffff" hasStroke="0" text="OSC Port"
           fontname="Default font" fontsize="11.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="221 374 49 30" fill="solid: ffffffff" hasStroke="0" text="\ypr[0]"
+    <TEXT pos="221 374 49 30" fill="solid: ffffffff" hasStroke="0" text="/ypr[0]"
           fontname="Default font" fontsize="10.0" kerning="0.0" bold="0"
           italic="0" justification="36"/>
     <TEXT pos="261 374 46 30" fill="solid: ffffffff" hasStroke="0" text="Pitch"
@@ -1475,10 +1468,10 @@ BEGIN_JUCER_METADATA
     <TEXT pos="184 374 62 30" fill="solid: ffffffff" hasStroke="0" text="Yaw"
           fontname="Default font" fontsize="12.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="294 374 40 30" fill="solid: ffffffff" hasStroke="0" text="\ypr[1]"
+    <TEXT pos="294 374 40 30" fill="solid: ffffffff" hasStroke="0" text="/ypr[1]"
           fontname="Default font" fontsize="10.0" kerning="0.0" bold="0"
           italic="0" justification="36"/>
-    <TEXT pos="350 374 40 30" fill="solid: ffffffff" hasStroke="0" text="\ypr[2]"
+    <TEXT pos="350 374 40 30" fill="solid: ffffffff" hasStroke="0" text="/ypr[2]"
           fontname="Default font" fontsize="10.0" kerning="0.0" bold="0"
           italic="0" justification="36"/>
     <TEXT pos="20 375 160 30" fill="solid: ffffffff" hasStroke="0" text="Enable Rotation"
@@ -1487,7 +1480,7 @@ BEGIN_JUCER_METADATA
     <TEXT pos="143 167 160 30" fill="solid: ffffffff" hasStroke="0" text="x           y           z"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="71 349 270 31" fill="solid: ffffffff" hasStroke="0" text="Ambisonic Sound-Field Rotation"
+    <TEXT pos="50 349 310 31" fill="solid: ffffffff" hasStroke="0" text="Ambisonic Sound-Field Rotation [degrees]"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
     <TEXT pos="18 423 160 30" fill="solid: ffffffff" hasStroke="0" text="(Note that this rotation is"
@@ -1566,9 +1559,10 @@ BEGIN_JUCER_METADATA
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="1799da9e8cf495d6" memberName="te_oscport"
-              virtualName="" explicitFocusOrder="0" pos="344 296 42 22" textcol="ffffffff"
-              bkgcol="ffffff" outlinecol="6c838080" initialText="9000" multiline="0"
-              retKeyStartsLine="0" readonly="0" scrollbars="1" caret="0" popupmenu="1"/>
+              virtualName="" explicitFocusOrder="0" pos="344 296 42 22" tooltip="OSC addresses: /xyz [m]; /quat [-1,1]; /xyzquat [m][-1, 1]; /ypr [deg]; /xyzypr [m][deg]."
+              textcol="ffffffff" bkgcol="ffffff" outlinecol="6c838080" initialText="9000"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
+              caret="0" popupmenu="1"/>
   <COMBOBOX name="new combo box" id="6406656f2512d83e" memberName="CBviewMode"
             virtualName="" explicitFocusOrder="0" pos="755 38 92 16" editable="0"
             layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
