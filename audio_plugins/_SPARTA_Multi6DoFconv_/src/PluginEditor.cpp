@@ -45,7 +45,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     label_hostBlockSize->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     label_hostBlockSize->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    label_hostBlockSize->setBounds (136, 95, 60, 20);
+    label_hostBlockSize->setBounds (136, 92, 60, 20);
 
     label_filterLength.reset (new juce::Label ("new label",
                                                juce::String()));
@@ -57,7 +57,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     label_filterLength->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     label_filterLength->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    label_filterLength->setBounds (333, 95, 60, 20);
+    label_filterLength->setBounds (334, 92, 60, 20);
 
     label_hostfs.reset (new juce::Label ("new label",
                                          juce::String()));
@@ -69,7 +69,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     label_hostfs->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     label_hostfs->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    label_hostfs->setBounds (333, 139, 60, 20);
+    label_hostfs->setBounds (334, 136, 60, 20);
 
     label_filterfs.reset (new juce::Label ("new label",
                                            juce::String()));
@@ -81,19 +81,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     label_filterfs->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     label_filterfs->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    label_filterfs->setBounds (333, 117, 60, 20);
-
-    label_NOutputs.reset (new juce::Label ("new label",
-                                           juce::String()));
-    addAndMakeVisible (label_NOutputs.get());
-    label_NOutputs->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
-    label_NOutputs->setJustificationType (juce::Justification::centredLeft);
-    label_NOutputs->setEditable (false, false, false);
-    label_NOutputs->setColour (juce::Label::outlineColourId, juce::Colour (0x68a3a2a2));
-    label_NOutputs->setColour (juce::TextEditor::textColourId, juce::Colours::black);
-    label_NOutputs->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
-
-    label_NOutputs->setBounds (136, 117, 60, 20);
+    label_filterfs->setBounds (334, 114, 60, 20);
 
     label_nIRpositions.reset (new juce::Label ("new label",
                                                juce::String()));
@@ -105,7 +93,19 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     label_nIRpositions->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     label_nIRpositions->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    label_nIRpositions->setBounds (136, 139, 60, 20);
+    label_nIRpositions->setBounds (136, 114, 60, 20);
+
+    label_NInputs.reset (new juce::Label ("new label",
+                                          juce::String()));
+    addAndMakeVisible (label_NInputs.get());
+    label_NInputs->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
+    label_NInputs->setJustificationType (juce::Justification::centredLeft);
+    label_NInputs->setEditable (false, false, false);
+    label_NInputs->setColour (juce::Label::outlineColourId, juce::Colour (0x68a3a2a2));
+    label_NInputs->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    label_NInputs->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    label_NInputs->setBounds (136, 158, 60, 20);
 
     SL_source_y.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_source_y.get());
@@ -114,7 +114,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     SL_source_y->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
     SL_source_y->addListener (this);
 
-    SL_source_y->setBounds (200, 200, 48, 20);
+    SL_source_y->setBounds (200, 233, 48, 20);
 
     SL_source_z.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_source_z.get());
@@ -123,7 +123,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     SL_source_z->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
     SL_source_z->addListener (this);
 
-    SL_source_z->setBounds (256, 200, 48, 20);
+    SL_source_z->setBounds (256, 233, 48, 20);
 
     SL_source_x.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_source_x.get());
@@ -132,7 +132,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     SL_source_x->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
     SL_source_x->addListener (this);
 
-    SL_source_x->setBounds (144, 200, 48, 20);
+    SL_source_x->setBounds (144, 233, 48, 20);
 
     SL_receiver_x.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_receiver_x.get());
@@ -141,7 +141,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     SL_receiver_x->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
     SL_receiver_x->addListener (this);
 
-    SL_receiver_x->setBounds (144, 284, 48, 20);
+    SL_receiver_x->setBounds (144, 302, 48, 20);
 
     SL_receiver_y.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_receiver_y.get());
@@ -150,7 +150,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     SL_receiver_y->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
     SL_receiver_y->addListener (this);
 
-    SL_receiver_y->setBounds (200, 284, 48, 20);
+    SL_receiver_y->setBounds (200, 302, 48, 20);
 
     SL_receiver_z.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_receiver_z.get());
@@ -159,7 +159,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     SL_receiver_z->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
     SL_receiver_z->addListener (this);
 
-    SL_receiver_z->setBounds (256, 284, 48, 20);
+    SL_receiver_z->setBounds (256, 302, 48, 20);
 
     label_receiverIdx.reset (new juce::Label ("new label",
                                               juce::String()));
@@ -171,7 +171,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     label_receiverIdx->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     label_receiverIdx->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    label_receiverIdx->setBounds (200, 308, 48, 20);
+    label_receiverIdx->setBounds (144, 326, 48, 20);
 
     te_oscport.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (te_oscport.get());
@@ -187,7 +187,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     te_oscport->setColour (juce::TextEditor::outlineColourId, juce::Colour (0x6c838080));
     te_oscport->setText (TRANS("9000"));
 
-    te_oscport->setBounds (344, 296, 42, 22);
+    te_oscport->setBounds (344, 314, 42, 22);
 
     CBviewMode.reset (new juce::ComboBox ("new combo box"));
     addAndMakeVisible (CBviewMode.get());
@@ -266,8 +266,55 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     TBenableRotation->setBounds (85, 402, 32, 24);
 
+    label_NOutputs.reset (new juce::Label ("new label",
+                                           juce::String()));
+    addAndMakeVisible (label_NOutputs.get());
+    label_NOutputs->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
+    label_NOutputs->setJustificationType (juce::Justification::centredLeft);
+    label_NOutputs->setEditable (false, false, false);
+    label_NOutputs->setColour (juce::Label::outlineColourId, juce::Colour (0x68a3a2a2));
+    label_NOutputs->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    label_NOutputs->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    label_NOutputs->setBounds (136, 180, 60, 20);
+
+    label_NIRs.reset (new juce::Label ("new label",
+                                       juce::String()));
+    addAndMakeVisible (label_NIRs.get());
+    label_NIRs->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
+    label_NIRs->setJustificationType (juce::Justification::centredLeft);
+    label_NIRs->setEditable (false, false, false);
+    label_NIRs->setColour (juce::Label::outlineColourId, juce::Colour (0x68a3a2a2));
+    label_NIRs->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    label_NIRs->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    label_NIRs->setBounds (136, 136, 60, 20);
+
+    box_first_part.reset (new juce::ComboBox ("new combo box"));
+    addAndMakeVisible (box_first_part.get());
+    box_first_part->setTooltip (TRANS("Set higher 1st convolution partition size (==buffer size) to optimize CPU performance but increased latency"));
+    box_first_part->setEditableText (false);
+    box_first_part->setJustificationType (juce::Justification::centredLeft);
+    box_first_part->setTextWhenNothingSelected (juce::String());
+    box_first_part->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
+    box_first_part->addListener (this);
+
+    box_first_part->setBounds (334, 163, 60, 20);
+
+    box_maxpart.reset (new juce::ComboBox ("new combo box"));
+    addAndMakeVisible (box_maxpart.get());
+    box_maxpart->setTooltip (TRANS("Set maximum partition size for CPU load optimizations, leave it at 8192 if you don\'t know what you are doing!"));
+    box_maxpart->setEditableText (false);
+    box_maxpart->setJustificationType (juce::Justification::centredLeft);
+    box_maxpart->setTextWhenNothingSelected (juce::String());
+    box_maxpart->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
+    box_maxpart->addListener (this);
+
+    box_maxpart->setBounds (334, 185, 60, 20);
+
 
     //[UserPreSize]
+    box_maxpart->setColour(ComboBox::textColourId, Colours::darkgrey);
     //[/UserPreSize]
 
     setSize (860, 500);
@@ -314,7 +361,6 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     t_flipPitch->setToggleState((bool)rotator_getFlipPitch(hRot), dontSendNotification);
     t_flipRoll->setToggleState((bool)rotator_getFlipRoll(hRot), dontSendNotification);
     TBenableRotation->setToggleState(hVst->getEnableRotation(), dontSendNotification);
-
 
     /* create SCENE VIEW window *//////////////////////////////////////////////////////////////////////////////////////
     sceneWindow.reset (new sceneView(ownerFilter, 440, 432));
@@ -364,6 +410,14 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     pluginDescription->setEnabled(false);
     pluginDescription->setTooltip(TRANS("Time-varying impulse response convolver. A set of IRs can be loaded from a sofa file, where IRs have to be assigned with different ListenerPositions. The position of the receiver can be varied during playback using the parameter sliders. The convolver finds the nearest neighbour IR of the selected position. It applies overlap-add partitioned convolution and cross-fades between previous and current positions to produce smooth transitions. Each IR can have up to 64 channels (7th order Ambisonics). Single fixed SourcePosition is assumed and only mono input is supported.\n"));
 
+    /* Combo boxes *////////////////////////////////////////////////////////////////////////////////////////////
+    box_first_part->setLookAndFeel(&smallComboBoxLookAndFeel);
+    box_first_part->clear(dontSendNotification);
+    box_first_part->setEnabled(false);
+    box_maxpart->clear(dontSendNotification);
+    box_maxpart->setLookAndFeel(&smallComboBoxLookAndFeel);
+    box_maxpart->setEnabled(false);
+
     /* Specify screen refresh rate */
     startTimer(refreshInterval); /*ms (40ms = 25 frames per second) */
 
@@ -382,8 +436,8 @@ PluginEditor::~PluginEditor()
     label_filterLength = nullptr;
     label_hostfs = nullptr;
     label_filterfs = nullptr;
-    label_NOutputs = nullptr;
     label_nIRpositions = nullptr;
+    label_NInputs = nullptr;
     SL_source_y = nullptr;
     SL_source_z = nullptr;
     SL_source_x = nullptr;
@@ -400,6 +454,10 @@ PluginEditor::~PluginEditor()
     t_flipPitch = nullptr;
     t_flipRoll = nullptr;
     TBenableRotation = nullptr;
+    label_NOutputs = nullptr;
+    label_NIRs = nullptr;
+    box_first_part = nullptr;
+    box_maxpart = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -447,7 +505,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 10, y = 256, width = 390, height = 88;
+        int x = 10, y = 278, width = 390, height = 74;
         juce::Colour fillColour = juce::Colour (0x10c7c7c7);
         juce::Colour strokeColour = juce::Colour (0x67a0a0a0);
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -460,7 +518,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 10, y = 168, width = 390, height = 62;
+        int x = 10, y = 213, width = 390, height = 44;
         juce::Colour fillColour = juce::Colour (0x10c7c7c7);
         juce::Colour strokeColour = juce::Colour (0x67a0a0a0);
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -486,7 +544,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 329, y = 256, width = 71, height = 88;
+        int x = 329, y = 278, width = 71, height = 74;
         juce::Colour fillColour = juce::Colour (0x10c7c7c7);
         juce::Colour strokeColour = juce::Colour (0x67a0a0a0);
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -556,7 +614,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 10, y = 85, width = 390, height = 84;
+        int x = 10, y = 85, width = 390, height = 123;
         juce::Colour fillColour = juce::Colour (0x10c7c7c7);
         juce::Colour strokeColour = juce::Colour (0x67a0a0a0);
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -593,7 +651,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 240, y = 1, width = 450, height = 32;
+        int x = 240, y = 4, width = 450, height = 28;
         juce::String text (TRANS("Multisource 6DoF Convolver with the MCFX convolution engine"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -645,7 +703,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 18, y = 86, width = 115, height = 30;
+        int x = 18, y = 92, width = 115, height = 20;
         juce::String text (TRANS("Host Block Size:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -657,7 +715,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 210, y = 86, width = 200, height = 30;
+        int x = 203, y = 92, width = 130, height = 20;
         juce::String text (TRANS("IR Length [s]:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -669,7 +727,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 210, y = 110, width = 128, height = 30;
+        int x = 203, y = 114, width = 130, height = 20;
         juce::String text (TRANS("Filter Samplerate:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -681,7 +739,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 210, y = 134, width = 144, height = 30;
+        int x = 203, y = 136, width = 130, height = 20;
         juce::String text (TRANS("Host Samplerate:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -693,8 +751,8 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 18, y = 110, width = 120, height = 31;
-        juce::String text (TRANS("N# IR channels:"));
+        int x = 18, y = 158, width = 115, height = 20;
+        juce::String text (TRANS("N# Inputs:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
@@ -717,7 +775,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 18, y = 134, width = 200, height = 30;
+        int x = 18, y = 114, width = 115, height = 20;
         juce::String text (TRANS("N# IR positions:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -741,7 +799,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 71, y = 231, width = 270, height = 31;
+        int x = 71, y = 253, width = 270, height = 31;
         juce::String text (TRANS("Target Listener Position [m]"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -753,7 +811,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 18, y = 193, width = 121, height = 30;
+        int x = 18, y = 233, width = 121, height = 20;
         juce::String text (TRANS("Source Position:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -765,7 +823,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 18, y = 280, width = 142, height = 26;
+        int x = 18, y = 302, width = 142, height = 20;
         juce::String text (TRANS("Target Position:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -777,7 +835,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 143, y = 255, width = 160, height = 30;
+        int x = 143, y = 279, width = 160, height = 20;
         juce::String text (TRANS("x           y           z"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -789,7 +847,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 18, y = 304, width = 142, height = 26;
+        int x = 18, y = 326, width = 142, height = 20;
         juce::String text (TRANS("Target Index:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -801,7 +859,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 343, y = 263, width = 91, height = 35;
+        int x = 329, y = 289, width = 71, height = 33;
         juce::String text (TRANS("OSC Port"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -809,7 +867,7 @@ void PluginEditor::paint (juce::Graphics& g)
         g.setColour (fillColour);
         g.setFont (juce::Font (11.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
         g.drawText (text, x, y, width, height,
-                    juce::Justification::centredLeft, true);
+                    juce::Justification::centred, true);
     }
 
     {
@@ -849,7 +907,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 317, y = 462, width = 63, height = 30;
+        int x = 317, y = 465, width = 63, height = 24;
         juce::String text (TRANS("+/-"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -861,7 +919,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 189, y = 462, width = 63, height = 30;
+        int x = 189, y = 465, width = 63, height = 24;
         juce::String text (TRANS("+/-"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -873,7 +931,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 253, y = 462, width = 63, height = 30;
+        int x = 253, y = 465, width = 63, height = 24;
         juce::String text (TRANS("+/-"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -933,18 +991,6 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 143, y = 167, width = 160, height = 30;
-        juce::String text (TRANS("x           y           z"));
-        juce::Colour fillColour = juce::Colours::white;
-        //[UserPaintCustomArguments] Customize the painting arguments here..
-        //[/UserPaintCustomArguments]
-        g.setColour (fillColour);
-        g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
-        g.drawText (text, x, y, width, height,
-                    juce::Justification::centred, true);
-    }
-
-    {
         int x = 50, y = 349, width = 310, height = 31;
         juce::String text (TRANS("Ambisonic Sound-Field Rotation [degrees]"));
         juce::Colour fillColour = juce::Colours::white;
@@ -988,6 +1034,79 @@ void PluginEditor::paint (juce::Graphics& g)
         //[/UserPaintCustomArguments]
         g.setColour (fillColour);
         g.setFont (juce::Font (12.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
+        g.drawText (text, x, y, width, height,
+                    juce::Justification::centred, true);
+    }
+
+    {
+        int x = 18, y = 180, width = 115, height = 20;
+        juce::String text (TRANS("N# Outputs:"));
+        juce::Colour fillColour = juce::Colours::white;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
+        g.drawText (text, x, y, width, height,
+                    juce::Justification::centredLeft, true);
+    }
+
+    {
+        int x = 18, y = 136, width = 115, height = 20;
+        juce::String text (TRANS("N# IRs x pos:"));
+        juce::Colour fillColour = juce::Colours::white;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
+        g.drawText (text, x, y, width, height,
+                    juce::Justification::centredLeft, true);
+    }
+
+    {
+        int x = 198, y = getHeight() - 342, width = 202, height = 50;
+        juce::Colour fillColour = juce::Colour (0x10c7c7c7);
+        juce::Colour strokeColour = juce::Colour (0x67a0a0a0);
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.fillRect (x, y, width, height);
+        g.setColour (strokeColour);
+        g.drawRect (x, y, width, height, 1);
+
+    }
+
+    {
+        int x = 203, y = 163, width = 130, height = 20;
+        juce::String text (TRANS("1st Partition Size:"));
+        juce::Colour fillColour = juce::Colours::white;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
+        g.drawText (text, x, y, width, height,
+                    juce::Justification::centredLeft, true);
+    }
+
+    {
+        int x = 203, y = 185, width = 130, height = 20;
+        juce::String text (TRANS("Max Partition Size:"));
+        juce::Colour fillColour = juce::Colours::white;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
+        g.drawText (text, x, y, width, height,
+                    juce::Justification::centredLeft, true);
+    }
+
+    {
+        int x = 142, y = 212, width = 160, height = 20;
+        juce::String text (TRANS("x           y           z"));
+        juce::Colour fillColour = juce::Colours::white;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
         g.drawText (text, x, y, width, height,
                     juce::Justification::centred, true);
     }
@@ -1162,6 +1281,22 @@ void PluginEditor::comboBoxChanged (juce::ComboBox* comboBoxThatHasChanged)
         refreshSceneViewWindow = true;
         //[/UserComboBoxCode_CBviewMode]
     }
+    else if (comboBoxThatHasChanged == box_first_part.get())
+    {
+        //[UserComboBoxCode_box_first_part] -- add your combo box handling code here..
+        int val = box_first_part->getText().getIntValue();
+
+        mcfxConv_setConvBufferSize(hTVC, val);
+        //[/UserComboBoxCode_box_first_part]
+    }
+    else if (comboBoxThatHasChanged == box_maxpart.get())
+    {
+        //[UserComboBoxCode_box_maxpart] -- add your combo box handling code here..
+        int val = box_maxpart->getText().getIntValue();
+
+        mcfxConv_setMaxPartitionSize(hTVC, val);
+        //[/UserComboBoxCode_box_maxpart]
+    }
 
     //[UsercomboBoxChanged_Post]
     //[/UsercomboBoxChanged_Post]
@@ -1211,11 +1346,15 @@ void PluginEditor::timerCallback()
     s_pitch->setValue(rotator_getPitch(hRot), dontSendNotification);
     s_roll->setValue(rotator_getRoll(hRot), dontSendNotification);
     label_hostBlockSize->setText(String(tvconv_getHostBlockSize(hTVC)), dontSendNotification);
-    label_NOutputs->setText(String(tvconv_getNumIRs(hTVC)), dontSendNotification);
+    label_NInputs->setText(String(mcfxConv_getMinInCh(hTVC)), dontSendNotification);
+    label_NOutputs->setText(String(mcfxConv_getMinOutCh(hTVC)), dontSendNotification);
+    label_NIRs->setText(String(tvconv_getNumIRs(hTVC)), dontSendNotification);
     label_nIRpositions->setText(String(tvconv_getNumListenerPositions(hTVC)), dontSendNotification);
     label_filterLength->setText(String((float)tvconv_getIRLength(hTVC)/MAX((float)tvconv_getIRFs(hTVC),1/*avoid nan*/)), dontSendNotification);
     label_hostfs->setText(String(tvconv_getHostFs(hTVC)), dontSendNotification);
 
+    // if (label_NInputs->getText().getIntValue() > 0 && !partitionComboboxesSet) // TODO: remove
+    setPartComboboxes();
 
     label_filterfs->setText(String(tvconv_getResampledIR(hTVC)?"*":"")+String(tvconv_getIRFs(hTVC)), dontSendNotification);
     if (tvconv_getResampledIR(hTVC))
@@ -1252,7 +1391,6 @@ void PluginEditor::timerCallback()
 
     tvConvError = tvconv_getSofaErrorState(hTVC);
     repaint(136, 45, 264, 11);
-
 
     if (refreshSceneViewWindow == true)
     {
@@ -1347,6 +1485,45 @@ void PluginEditor::setRefreshSceneViewWindow(bool val)
     refreshSceneViewWindow = val;
 }
 
+void PluginEditor::setPartComboboxes() {
+    if (mcfxConv_getMinInCh(hTVC) != 0) {
+        unsigned int buf = jmax(mcfxConv_getBufferSize(hTVC), (unsigned int)1);
+        unsigned int conv_buf = jmax(mcfxConv_getConvBufferSize(hTVC), buf);
+        int sel = 0;
+        unsigned int val = 0;
+
+        box_first_part->clear(dontSendNotification);
+        for (int i = 0; val < 8192; i++) {
+            val = (unsigned int)floor(buf * pow(2, i));
+            box_first_part->addItem(String(val), i + 1);
+            if (val == conv_buf) sel = i;
+        }
+        box_first_part->setSelectedItemIndex(sel, dontSendNotification);
+        box_first_part->repaint();
+
+        box_maxpart->clear(dontSendNotification);
+        box_maxpart->setColour(ComboBox::backgroundColourId, Colour(0xff0b1719));
+        sel = 0;
+        val = 0;
+        unsigned int max_part_size = mcfxConv_getMaxPartitionSize(hTVC);
+        for (int i = 0; val < 8192; i++) {
+            val = (unsigned int)floor(conv_buf * pow(2, i));
+            if (val < conv_buf) continue;
+            box_maxpart->addItem(String(val), i + 1);
+            if (val == max_part_size) 
+                sel = i;
+        }
+        box_maxpart->setSelectedItemIndex(sel, dontSendNotification);
+
+        box_maxpart->repaint();
+        box_first_part->setEnabled(true);
+        box_maxpart->setEnabled(true);
+        partitionComboboxesSet = true;
+    } else {
+        box_first_part->setEnabled(false);
+        box_maxpart->setEnabled(false);
+    }
+}
 
 //[/MiscUserCode]
 
@@ -1370,13 +1547,13 @@ BEGIN_JUCER_METADATA
           hasStroke="0"/>
     <RECT pos="0 316 860 186" fill="linear: 8 496, 8 416, 0=ff19313f, 1=ff041518"
           hasStroke="0"/>
-    <RECT pos="10 256 390 88" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
+    <RECT pos="10 278 390 74" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
           strokeColour="solid: 67a0a0a0"/>
-    <RECT pos="10 168 390 62" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
+    <RECT pos="10 213 390 44" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
           strokeColour="solid: 67a0a0a0"/>
     <RECT pos="10 375 174 116" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
           strokeColour="solid: 67a0a0a0"/>
-    <RECT pos="329 256 71 88" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
+    <RECT pos="329 278 71 74" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
           strokeColour="solid: 67a0a0a0"/>
     <RECT pos="183 375 218 116" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
           strokeColour="solid: 67a0a0a0"/>
@@ -1386,7 +1563,7 @@ BEGIN_JUCER_METADATA
           strokeColour="solid: 67a0a0a0"/>
     <ROUNDRECT pos="1 2 858 31" cornerSize="5.0" fill="linear: 0 32, 528 32, 0=ff041518, 1=ff19313f"
                hasStroke="1" stroke="2, mitered, butt" strokeColour="solid: ffb9b9b9"/>
-    <RECT pos="10 85 390 84" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
+    <RECT pos="10 85 390 123" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
           strokeColour="solid: 67a0a0a0"/>
     <TEXT pos="16 1 100 32" fill="solid: ffffffff" hasStroke="0" text="SPARTA|"
           fontname="Default font" fontsize="18.8" kerning="0.0" bold="1"
@@ -1394,7 +1571,7 @@ BEGIN_JUCER_METADATA
     <TEXT pos="92 1 148 32" fill="solid: ff8c00ff" hasStroke="0" text="Multi6DoFconv"
           fontname="Default font" fontsize="18.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="240 1 450 32" fill="solid: ffffffff" hasStroke="0" text="Multisource 6DoF Convolver with the MCFX convolution engine"
+    <TEXT pos="240 4 450 28" fill="solid: ffffffff" hasStroke="0" text="Multisource 6DoF Convolver with the MCFX convolution engine"
           fontname="Default font" fontsize="12.0" kerning="0.0" bold="0"
           italic="0" justification="33"/>
     <RECT pos="0 0 860 2" fill="solid: 61a52a" hasStroke="1" stroke="2, mitered, butt"
@@ -1405,48 +1582,48 @@ BEGIN_JUCER_METADATA
           strokeColour="solid: ffb9b9b9"/>
     <RECT pos="0 498 860 2" fill="solid: 61a52a" hasStroke="1" stroke="2, mitered, butt"
           strokeColour="solid: ffb9b9b9"/>
-    <TEXT pos="18 86 115 30" fill="solid: ffffffff" hasStroke="0" text="Host Block Size:"
+    <TEXT pos="18 92 115 20" fill="solid: ffffffff" hasStroke="0" text="Host Block Size:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="210 86 200 30" fill="solid: ffffffff" hasStroke="0" text="IR Length [s]:"
+    <TEXT pos="203 92 130 20" fill="solid: ffffffff" hasStroke="0" text="IR Length [s]:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="210 110 128 30" fill="solid: ffffffff" hasStroke="0" text="Filter Samplerate:"
+    <TEXT pos="203 114 130 20" fill="solid: ffffffff" hasStroke="0" text="Filter Samplerate:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="210 134 144 30" fill="solid: ffffffff" hasStroke="0" text="Host Samplerate:"
+    <TEXT pos="203 136 130 20" fill="solid: ffffffff" hasStroke="0" text="Host Samplerate:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="18 110 120 31" fill="solid: ffffffff" hasStroke="0" text="N# IR channels:"
+    <TEXT pos="18 158 115 20" fill="solid: ffffffff" hasStroke="0" text="N# Inputs:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
     <TEXT pos="18 34 120 31" fill="solid: ffffffff" hasStroke="0" text="Load IR dataset"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="18 134 200 30" fill="solid: ffffffff" hasStroke="0" text="N# IR positions:"
+    <TEXT pos="18 114 115 20" fill="solid: ffffffff" hasStroke="0" text="N# IR positions:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
     <TEXT pos="415 34 417 31" fill="solid: ffffffff" hasStroke="0" text="Coordinate View [m]"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="71 231 270 31" fill="solid: ffffffff" hasStroke="0" text="Target Listener Position [m]"
+    <TEXT pos="71 253 270 31" fill="solid: ffffffff" hasStroke="0" text="Target Listener Position [m]"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="18 193 121 30" fill="solid: ffffffff" hasStroke="0" text="Source Position:"
+    <TEXT pos="18 233 121 20" fill="solid: ffffffff" hasStroke="0" text="Source Position:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="18 280 142 26" fill="solid: ffffffff" hasStroke="0" text="Target Position:"
+    <TEXT pos="18 302 142 20" fill="solid: ffffffff" hasStroke="0" text="Target Position:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="143 255 160 30" fill="solid: ffffffff" hasStroke="0" text="x           y           z"
+    <TEXT pos="143 279 160 20" fill="solid: ffffffff" hasStroke="0" text="x           y           z"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="18 304 142 26" fill="solid: ffffffff" hasStroke="0" text="Target Index:"
+    <TEXT pos="18 326 142 20" fill="solid: ffffffff" hasStroke="0" text="Target Index:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="343 263 91 35" fill="solid: ffffffff" hasStroke="0" text="OSC Port"
+    <TEXT pos="329 289 71 33" fill="solid: ffffffff" hasStroke="0" text="OSC Port"
           fontname="Default font" fontsize="11.0" kerning="0.0" bold="1"
-          italic="0" justification="33" typefaceStyle="Bold"/>
+          italic="0" justification="36" typefaceStyle="Bold"/>
     <TEXT pos="221 374 49 30" fill="solid: ffffffff" hasStroke="0" text="/ypr[0]"
           fontname="Default font" fontsize="10.0" kerning="0.0" bold="0"
           italic="0" justification="36"/>
@@ -1456,13 +1633,13 @@ BEGIN_JUCER_METADATA
     <TEXT pos="317 374 54 30" fill="solid: ffffffff" hasStroke="0" text="Roll"
           fontname="Default font" fontsize="12.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="317 462 63 30" fill="solid: ffffffff" hasStroke="0" text="+/-"
+    <TEXT pos="317 465 63 24" fill="solid: ffffffff" hasStroke="0" text="+/-"
           fontname="Default font" fontsize="13.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="189 462 63 30" fill="solid: ffffffff" hasStroke="0" text="+/-"
+    <TEXT pos="189 465 63 24" fill="solid: ffffffff" hasStroke="0" text="+/-"
           fontname="Default font" fontsize="13.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="253 462 63 30" fill="solid: ffffffff" hasStroke="0" text="+/-"
+    <TEXT pos="253 465 63 24" fill="solid: ffffffff" hasStroke="0" text="+/-"
           fontname="Default font" fontsize="13.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
     <TEXT pos="184 374 62 30" fill="solid: ffffffff" hasStroke="0" text="Yaw"
@@ -1477,9 +1654,6 @@ BEGIN_JUCER_METADATA
     <TEXT pos="20 375 160 30" fill="solid: ffffffff" hasStroke="0" text="Enable Rotation"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="143 167 160 30" fill="solid: ffffffff" hasStroke="0" text="x           y           z"
-          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
-          italic="0" justification="36" typefaceStyle="Bold"/>
     <TEXT pos="50 349 310 31" fill="solid: ffffffff" hasStroke="0" text="Ambisonic Sound-Field Rotation [degrees]"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
@@ -1492,74 +1666,91 @@ BEGIN_JUCER_METADATA
     <TEXT pos="18 455 160 30" fill="solid: ffffffff" hasStroke="0" text="loaded Ambisonic IRs)"
           fontname="Default font" fontsize="12.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
+    <TEXT pos="18 180 115 20" fill="solid: ffffffff" hasStroke="0" text="N# Outputs:"
+          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
+          italic="0" justification="33" typefaceStyle="Bold"/>
+    <TEXT pos="18 136 115 20" fill="solid: ffffffff" hasStroke="0" text="N# IRs x pos:"
+          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
+          italic="0" justification="33" typefaceStyle="Bold"/>
+    <RECT pos="198 342R 202 50" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
+          strokeColour="solid: 67a0a0a0"/>
+    <TEXT pos="203 163 130 20" fill="solid: ffffffff" hasStroke="0" text="1st Partition Size:"
+          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
+          italic="0" justification="33" typefaceStyle="Bold"/>
+    <TEXT pos="203 185 130 20" fill="solid: ffffffff" hasStroke="0" text="Max Partition Size:"
+          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
+          italic="0" justification="33" typefaceStyle="Bold"/>
+    <TEXT pos="142 212 160 20" fill="solid: ffffffff" hasStroke="0" text="x           y           z"
+          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
+          italic="0" justification="36" typefaceStyle="Bold"/>
   </BACKGROUND>
   <LABEL name="new label" id="167c5975ece5bfaa" memberName="label_hostBlockSize"
-         virtualName="" explicitFocusOrder="0" pos="136 95 60 20" outlineCol="68a3a2a2"
+         virtualName="" explicitFocusOrder="0" pos="136 92 60 20" outlineCol="68a3a2a2"
          edTextCol="ff000000" edBkgCol="0" labelText="" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="7d9ebaead925d1e6" memberName="label_filterLength"
-         virtualName="" explicitFocusOrder="0" pos="333 95 60 20" outlineCol="68a3a2a2"
+         virtualName="" explicitFocusOrder="0" pos="334 92 60 20" outlineCol="68a3a2a2"
          edTextCol="ff000000" edBkgCol="0" labelText="" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="b5990c279ece4f98" memberName="label_hostfs"
-         virtualName="" explicitFocusOrder="0" pos="333 139 60 20" outlineCol="68a3a2a2"
+         virtualName="" explicitFocusOrder="0" pos="334 136 60 20" outlineCol="68a3a2a2"
          edTextCol="ff000000" edBkgCol="0" labelText="" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="5ca688f8365be60e" memberName="label_filterfs"
-         virtualName="" explicitFocusOrder="0" pos="333 117 60 20" outlineCol="68a3a2a2"
+         virtualName="" explicitFocusOrder="0" pos="334 114 60 20" outlineCol="68a3a2a2"
          edTextCol="ff000000" edBkgCol="0" labelText="" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
-  <LABEL name="new label" id="fbe948204f97884b" memberName="label_NOutputs"
-         virtualName="" explicitFocusOrder="0" pos="136 117 60 20" outlineCol="68a3a2a2"
+  <LABEL name="new label" id="fbe948204f97884b" memberName="label_nIRpositions"
+         virtualName="" explicitFocusOrder="0" pos="136 114 60 20" outlineCol="68a3a2a2"
          edTextCol="ff000000" edBkgCol="0" labelText="" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
-  <LABEL name="new label" id="b7d47df871a4b9f8" memberName="label_nIRpositions"
-         virtualName="" explicitFocusOrder="0" pos="136 139 60 20" outlineCol="68a3a2a2"
+  <LABEL name="new label" id="b7d47df871a4b9f8" memberName="label_NInputs"
+         virtualName="" explicitFocusOrder="0" pos="136 158 60 20" outlineCol="68a3a2a2"
          edTextCol="ff000000" edBkgCol="0" labelText="" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <SLIDER name="new slider" id="91838e1f378b04d5" memberName="SL_source_y"
-          virtualName="" explicitFocusOrder="0" pos="200 200 48 20" min="0.0"
+          virtualName="" explicitFocusOrder="0" pos="200 233 48 20" min="0.0"
           max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <SLIDER name="new slider" id="4f9b7b9e0e5eb928" memberName="SL_source_z"
-          virtualName="" explicitFocusOrder="0" pos="256 200 48 20" min="0.0"
+          virtualName="" explicitFocusOrder="0" pos="256 233 48 20" min="0.0"
           max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <SLIDER name="new slider" id="15013dd0f37db52c" memberName="SL_source_x"
-          virtualName="" explicitFocusOrder="0" pos="144 200 48 20" min="0.0"
+          virtualName="" explicitFocusOrder="0" pos="144 233 48 20" min="0.0"
           max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <SLIDER name="new slider" id="572be8cab2789e9d" memberName="SL_receiver_x"
-          virtualName="" explicitFocusOrder="0" pos="144 284 48 20" min="0.0"
+          virtualName="" explicitFocusOrder="0" pos="144 302 48 20" min="0.0"
           max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <SLIDER name="new slider" id="2c60d2500e81284e" memberName="SL_receiver_y"
-          virtualName="" explicitFocusOrder="0" pos="200 284 48 20" min="0.0"
+          virtualName="" explicitFocusOrder="0" pos="200 302 48 20" min="0.0"
           max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <SLIDER name="new slider" id="a60197fb8a061339" memberName="SL_receiver_z"
-          virtualName="" explicitFocusOrder="0" pos="256 284 48 20" min="0.0"
+          virtualName="" explicitFocusOrder="0" pos="256 302 48 20" min="0.0"
           max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <LABEL name="new label" id="d173a8591e895adf" memberName="label_receiverIdx"
-         virtualName="" explicitFocusOrder="0" pos="200 308 48 20" outlineCol="68a3a2a2"
+         virtualName="" explicitFocusOrder="0" pos="144 326 48 20" outlineCol="68a3a2a2"
          edTextCol="ff000000" edBkgCol="0" labelText="" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="1799da9e8cf495d6" memberName="te_oscport"
-              virtualName="" explicitFocusOrder="0" pos="344 296 42 22" tooltip="OSC addresses: /xyz [m]; /quat [-1,1]; /xyzquat [m][-1, 1]; /ypr [deg]; /xyzypr [m][deg]."
+              virtualName="" explicitFocusOrder="0" pos="344 314 42 22" tooltip="OSC addresses: /xyz [m]; /quat [-1,1]; /xyzquat [m][-1, 1]; /ypr [deg]; /xyzypr [m][deg]."
               textcol="ffffffff" bkgcol="ffffff" outlinecol="6c838080" initialText="9000"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="0" popupmenu="1"/>
@@ -1596,6 +1787,22 @@ BEGIN_JUCER_METADATA
   <TOGGLEBUTTON name="new toggle button" id="a45ef80fa16bd3f0" memberName="TBenableRotation"
                 virtualName="" explicitFocusOrder="0" pos="85 402 32 24" buttonText=""
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
+  <LABEL name="new label" id="24b3860d6e3d8079" memberName="label_NOutputs"
+         virtualName="" explicitFocusOrder="0" pos="136 180 60 20" outlineCol="68a3a2a2"
+         edTextCol="ff000000" edBkgCol="0" labelText="" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
+         fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
+  <LABEL name="new label" id="6eab83d0b7cf017a" memberName="label_NIRs"
+         virtualName="" explicitFocusOrder="0" pos="136 136 60 20" outlineCol="68a3a2a2"
+         edTextCol="ff000000" edBkgCol="0" labelText="" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
+         fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
+  <COMBOBOX name="new combo box" id="a93a5e77fc9d23c9" memberName="box_first_part"
+            virtualName="" explicitFocusOrder="0" pos="334 163 60 20" tooltip="Set higher 1st convolution partition size (==buffer size) to optimize CPU performance but increased latency"
+            editable="0" layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
+  <COMBOBOX name="new combo box" id="71aef32e6b70fa85" memberName="box_maxpart"
+            virtualName="" explicitFocusOrder="0" pos="334 185 60 20" tooltip="Set maximum partition size for CPU load optimizations, leave it at 8192 if you don't know what you are doing!"
+            editable="0" layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

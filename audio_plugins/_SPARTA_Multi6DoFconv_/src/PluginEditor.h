@@ -68,6 +68,9 @@ public:
 
     void setRefreshSceneViewWindow(bool val);
 
+    /* update first partition size combo box and max partition size combo box */
+    void setPartComboboxes();
+
     //[/UserMethods]
 
     void paint (juce::Graphics& g) override;
@@ -84,9 +87,53 @@ private:
     void* hTVC;
     void* hRot;
     void timerCallback() override;
+    bool partitionComboboxesSet = false;
 
     /* Look and Feel */
     SPARTALookAndFeel LAF;
+
+    /** Custom Look and feel for small text comboboxes */
+    class CustomLookAndFeel : public LookAndFeel_V4 {
+    private:
+        float comboBoxTextWidthPercentage = 0.7f,  // Percentage of combobox width to use for text
+            comboBoxMinArrowWidth = 18;            // Minimum width of the arrow in pixels
+    public:
+        CustomLookAndFeel() = default;
+        void drawComboBox(Graphics& g, int width, int height, bool, int, int, int, int, ComboBox& box) {
+            auto cornerSize = box.findParentComponentOfClass<ChoicePropertyComponent>() != nullptr ? 0.0f : 3.0f;
+            juce::Rectangle<int> boxBounds(0, 0, width, height);
+
+            g.setColour(box.findColour(ComboBox::backgroundColourId));
+            g.fillRoundedRectangle(boxBounds.toFloat(), cornerSize);
+
+            g.setColour(box.findColour(ComboBox::outlineColourId));
+            g.drawRoundedRectangle(boxBounds.toFloat().reduced(0.5f, 0.5f), cornerSize, 1.0f);
+
+            int arrowWidth = jmax((int)width * (1.0f - comboBoxTextWidthPercentage), comboBoxMinArrowWidth);
+            juce::Rectangle<int> arrowZone(width - arrowWidth, 0, arrowWidth, height);
+            juce::Path path;
+            path.startNewSubPath((float)arrowZone.getX() + 3.0f, (float)arrowZone.getCentreY() - 2.0f);
+            path.lineTo((float)arrowZone.getCentreX(), (float)arrowZone.getCentreY() + 3.0f);
+            path.lineTo((float)arrowZone.getRight() - 3.0f, (float)arrowZone.getCentreY() - 2.0f);
+
+            g.setColour(box.findColour(ComboBox::arrowColourId).withAlpha((box.isEnabled() ? 0.9f : 0.2f)));
+            g.strokePath(path, PathStrokeType(1.0f));
+        }
+
+        Font getComboBoxFont(ComboBox& box) override {
+            return {jmin(12.0f, (float)box.getHeight() * 0.85f)};
+        }
+
+        void positionComboBoxText(ComboBox& box, Label& label) override {
+            int width = box.getWidth();
+            int arrowWidth = jmax((int)width * (1.0f - comboBoxTextWidthPercentage), comboBoxMinArrowWidth);
+            label.setBounds(1, 1,
+                            width - arrowWidth,
+                            box.getHeight() - 2);
+
+            label.setFont(getComboBoxFont(box));
+        }
+    } smallComboBoxLookAndFeel;
 
     /* sofa loading */
     std::unique_ptr<juce::FilenameComponent> fileComp;
@@ -94,6 +141,7 @@ private:
 
     /* sofa file loading */
      void filenameComponentChanged (FilenameComponent*) override  {
+         partitionComboboxesSet = false;
          String directory = fileComp->getCurrentFile().getFullPathName();
          const char* new_cstring = (const char*)directory.toUTF8();
          tvconv_setSofaFilePath(hTVC, new_cstring);
@@ -120,8 +168,8 @@ private:
     std::unique_ptr<juce::Label> label_filterLength;
     std::unique_ptr<juce::Label> label_hostfs;
     std::unique_ptr<juce::Label> label_filterfs;
-    std::unique_ptr<juce::Label> label_NOutputs;
     std::unique_ptr<juce::Label> label_nIRpositions;
+    std::unique_ptr<juce::Label> label_NInputs;
     std::unique_ptr<juce::Slider> SL_source_y;
     std::unique_ptr<juce::Slider> SL_source_z;
     std::unique_ptr<juce::Slider> SL_source_x;
@@ -138,6 +186,10 @@ private:
     std::unique_ptr<juce::ToggleButton> t_flipPitch;
     std::unique_ptr<juce::ToggleButton> t_flipRoll;
     std::unique_ptr<juce::ToggleButton> TBenableRotation;
+    std::unique_ptr<juce::Label> label_NOutputs;
+    std::unique_ptr<juce::Label> label_NIRs;
+    std::unique_ptr<juce::ComboBox> box_first_part;
+    std::unique_ptr<juce::ComboBox> box_maxpart;
 
 
     //==============================================================================

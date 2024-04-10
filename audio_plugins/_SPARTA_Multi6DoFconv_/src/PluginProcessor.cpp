@@ -504,61 +504,67 @@ void PluginProcessor::getStateInformation (juce::MemoryBlock& destData)
 
     xml.setAttribute("OSC_PORT", osc_port_ID);
 
+    xml.setAttribute("ConvBufferSize", (int)mcfxConv_getConvBufferSize(hTVCnv));
+    xml.setAttribute("MaxPartSize", (int)mcfxConv_getMaxPartitionSize(hTVCnv));
+
     copyXmlToBinary(xml, destData);
 }
 
-void PluginProcessor::setStateInformation (const void* data, int sizeInBytes)
-{
+void PluginProcessor::setStateInformation(const void* data, int sizeInBytes) {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
     /* This getXmlFromBinary() function retrieves XML from the binary blob */
-        std::unique_ptr<XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
+    std::unique_ptr<XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
 
-        if (xmlState != nullptr) {
-            /* make sure that it's actually the correct XML object */
-            if (xmlState->hasTagName("TVCONVAUDIOPLUGINSETTINGS")) {
-     
-                if(xmlState->hasAttribute("LastSofaFilePath")){
-                    String directory = xmlState->getStringAttribute("LastSofaFilePath", "no_file");
-                    const char* new_cstring = (const char*)directory.toUTF8();
-                    tvconv_setSofaFilePath(hTVCnv, new_cstring);
-                }
-                if (xmlState->hasAttribute("ReceiverX")){
-                    tvconv_setTargetPosition(hTVCnv,
-                        (float)xmlState->getDoubleAttribute("ReceiverX"), 0);
-                }
-                if (xmlState->hasAttribute("ReceiverY")){
-                    tvconv_setTargetPosition(hTVCnv,
-                        (float)xmlState->getDoubleAttribute("ReceiverY"), 1);
-                }
-                if (xmlState->hasAttribute("ReceiverZ")){
-                    tvconv_setTargetPosition(hTVCnv,
-                        (float)xmlState->getDoubleAttribute("ReceiverZ"), 2);
-                }
-
-                if (xmlState->hasAttribute("OSC_PORT")) {
-                    osc_port_ID = xmlState->getIntAttribute("OSC_PORT", DEFAULT_OSC_PORT);
-                    osc.connect(osc_port_ID);
-                }
-
-                if (xmlState->hasAttribute("TBRotFlag")) {
-                    DBG("flag set");
-                }
-                
-                tvconv_refreshParams(hTVCnv);
-
-				// Notify the host about the room size
-                room_size_x->beginChangeGesture();
-				room_size_x->setValueNotifyingHost( tvconv_getMaxDimension(hTVCnv, 0) - tvconv_getMinDimension(hTVCnv, 0) );
-				room_size_x->endChangeGesture();
-				room_size_y->beginChangeGesture();
-				room_size_y->setValueNotifyingHost( tvconv_getMaxDimension(hTVCnv, 1) - tvconv_getMinDimension(hTVCnv, 1) );
-				room_size_y->endChangeGesture();
-				room_size_z->beginChangeGesture();
-				room_size_z->setValueNotifyingHost( tvconv_getMaxDimension(hTVCnv, 2) - tvconv_getMinDimension(hTVCnv, 2) );
-				room_size_z->endChangeGesture();
+    if (xmlState != nullptr) {
+        /* make sure that it's actually the correct XML object */
+        if (xmlState->hasTagName("TVCONVAUDIOPLUGINSETTINGS")) {
+            if (xmlState->hasAttribute("LastSofaFilePath")) {
+                String directory = xmlState->getStringAttribute("LastSofaFilePath", "no_file");
+                const char* new_cstring = (const char*)directory.toUTF8();
+                tvconv_setSofaFilePath(hTVCnv, new_cstring);
             }
+            if (xmlState->hasAttribute("ReceiverX")) {
+                tvconv_setTargetPosition(hTVCnv, (float)xmlState->getDoubleAttribute("ReceiverX"), 0);
+            }
+            if (xmlState->hasAttribute("ReceiverY")) {
+                tvconv_setTargetPosition(hTVCnv, (float)xmlState->getDoubleAttribute("ReceiverY"), 1);
+            }
+            if (xmlState->hasAttribute("ReceiverZ")) {
+                tvconv_setTargetPosition(hTVCnv, (float)xmlState->getDoubleAttribute("ReceiverZ"), 2);
+            }
+
+            if (xmlState->hasAttribute("OSC_PORT")) {
+                osc_port_ID = xmlState->getIntAttribute("OSC_PORT", DEFAULT_OSC_PORT);
+                osc.connect(osc_port_ID);
+            }
+
+            if (xmlState->hasAttribute("ConvBufferSize")) {
+                mcfxConv_setConvBufferSize(hTVCnv, xmlState->getIntAttribute("ConvBufferSize", 0));
+            }
+
+            if (xmlState->hasAttribute("MaxPartSize")) {
+                mcfxConv_setMaxPartitionSize(hTVCnv, xmlState->getIntAttribute("MaxPartSize", 0));
+            }
+
+            if (xmlState->hasAttribute("TBRotFlag")) {
+                DBG("flag set");
+            }
+
+            tvconv_refreshParams(hTVCnv);
+
+            // Notify the host about the room size
+            room_size_x->beginChangeGesture();
+            room_size_x->setValueNotifyingHost(tvconv_getMaxDimension(hTVCnv, 0) - tvconv_getMinDimension(hTVCnv, 0));
+            room_size_x->endChangeGesture();
+            room_size_y->beginChangeGesture();
+            room_size_y->setValueNotifyingHost(tvconv_getMaxDimension(hTVCnv, 1) - tvconv_getMinDimension(hTVCnv, 1));
+            room_size_y->endChangeGesture();
+            room_size_z->beginChangeGesture();
+            room_size_z->setValueNotifyingHost(tvconv_getMaxDimension(hTVCnv, 2) - tvconv_getMinDimension(hTVCnv, 2));
+            room_size_z->endChangeGesture();
         }
+    }
 }
 
 //==============================================================================

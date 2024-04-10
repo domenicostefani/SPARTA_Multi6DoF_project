@@ -82,7 +82,7 @@ typedef struct _internal_MCFXConv_struct {
 // --- End of internal functions -- //
 
 // --- From SAF utilities --- //
-void mcfxConv_create(void** const phMCFXc, int _BufferSize,int _ConvBufferSize, float** H, int length_h, int nIRs, int nCHout, int initIdx, double sampleRate, int ir_fs);
+void mcfxConv_create(void** const phMCFXc, int _BufferSize, unsigned int& _ConvBufferSize_ref, float** H, int length_h, int nIRs, int nCHout, int initIdx, double sampleRate, int ir_fs, unsigned int& _MaxPartSize_ref);
 void mcfxConv_destroy(void** const phMCFXc);
 void mcfxConv_apply(void* const hTVC, float* inputSig, float* outputSig, int irIdx);
 
@@ -155,6 +155,7 @@ typedef struct _mcfxconv
     unsigned int _ConvBufferSize;  // size of the head convolution block (possibility to make it larger in order to reduce CPU load)
 
     bool _isProcessing;
+    unsigned int _MaxPartSize;
     bool _paramReload;  // vst parameter to allow triggering reload of configuration
 
     Array<int> _conv_in;   // list with input routing
@@ -210,6 +211,7 @@ void tvconv_create(void** const phMcfxConv) {
 
     /* MCFX parameters */ 
     pData->_isProcessing = false;
+    pData->_MaxPartSize = MAX_PART_SIZE;
     pData->_paramReload = false;
 }
 
@@ -410,14 +412,15 @@ void tvconv_checkReInit(void* const hMcfxConv) {
                 checkAndNotifyResampling = true;
             mcfxConv_create(&(pData->hMCFXConv),
                               pData->_BufferSize, // This replaced pData->hostBlockSize_clamped,
-                              pData->_ConvBufferSize,
+                              pData->_ConvBufferSize, // PASSED AS REFERENCE
                               pData->irs,
                               pData->ir_length,
                               pData->nListenerPositions,
                               pData->nOutputChannels,
                               pData->position_idx,
                               pData->_SampleRate, // _sampleRate was passed as required by MCFX convdata, as double
-                              pData->ir_fs       // Original IR samplerate for resampling
+                              pData->ir_fs,       // Original IR samplerate for resampling
+                              pData->_MaxPartSize // PASSED AS REFERENCE
                               ); 
             if (checkAndNotifyResampling) {
                 pData->resampled_ir = true;
@@ -527,7 +530,6 @@ void tvconv_setFiltersAndPositions(void* const hMcfxConv) {
         pData->nOutputChannels = SAF_MIN(pData->nIrChannels, MAX_NUM_CHANNELS);
         internal_setMinMaxDimensions(hMcfxConv);
     #else
-        throw std::logic_error("TMP: this should not be called, figure out why");
         pData->ir_length = 0;
         saf_print_warning("This example requires SAF_ENABLE_SOFA_READER_MODULE to do anything");
     #endif
@@ -539,6 +541,11 @@ void tvconv_setFiltersAndPositions(void* const hMcfxConv) {
         /* done! */
         strcpy(pData->progressBarText,"Done!");
         pData->progressBar0_1 = 1.0f;
+}
+
+void tvconv_reinitConvolver(void* const hMcfxConv) {
+    if (hMcfxConv == NULL) return;
+    ((McfxConvData*)(hMcfxConv))->reInitFilters = 1;
 }
 
 void tvconv_setSofaFilePath(void* const hMcfxConv, const char* path) {
@@ -740,14 +747,15 @@ void internal_setMinMaxDimensions(void* const hTVCnv)
 void mcfxConv_create(
     void** const phMCFXc,
     int _BufferSize,
-    int _ConvBufferSize,
+    unsigned int& _ConvBufferSize_ref,
     float** H, /* nIRs x FLAT(nCHout x length_h) */
     int length_h,
     int nIRs,
     int nCHout,
     int initIdx,
     double sampleRate,
-    int ir_fs) {
+    int ir_fs,
+    unsigned int& _MaxPartSize_ref) {
     *phMCFXc = malloc1d(sizeof(Internal_Conv_struct));
     Internal_Conv_struct* h = (Internal_Conv_struct*)(*phMCFXc);
 
@@ -759,7 +767,9 @@ void mcfxConv_create(
     h->_num_conv = 0;
     /* End of Mcfx param init */
     
-    h->_MaxPartSize = MAX_PART_SIZE;
+    // Ensure that the first partition size (or conv buffer size) is at least as large as the block size 
+    if (_ConvBufferSize_ref < _BufferSize) _ConvBufferSize_ref = _BufferSize;
+    _ConvBufferSize_ref = nextPowerOfTwo(_ConvBufferSize_ref);
 
     int nCHin = 1;  // TODO: pass this as argument as soon as multisource suppoert is enabled
 
@@ -854,7 +864,7 @@ void mcfxConv_create(
 
         printf("max length: %lli \n", conv_data.getMaxLength());
 
-        err = zita_conv.configure(conv_data.getNumInputChannels(), conv_data.getNumOutputChannels(), (unsigned int)conv_data.getMaxLength(), _BufferSize, _ConvBufferSize, Convproc::MAXPART);
+        err = zita_conv.configure(conv_data.getNumInputChannels(), conv_data.getNumOutputChannels(), (unsigned int)conv_data.getMaxLength(), _BufferSize, _ConvBufferSize_ref, Convproc::MAXPART);
 
         for (int i = 0; i < conv_data.getNumIRs(); i++) {
             err = zita_conv.impdata_create(conv_data.getInCh(i), conv_data.getOutCh(i), 1, (float*)conv_data.getIR(i)->getReadPointer(0), 0, (unsigned int)conv_data.getLength(i));
@@ -864,8 +874,7 @@ void mcfxConv_create(
         zita_conv.start_process(CONVPROC_SCHEDULER_PRIORITY, CONVPROC_SCHEDULER_CLASS);
 
 #else
-        // TODO: continue adapting  MCFX loadconfiguration code, inside the FOR listerner position block
-        h->_MaxPartSize = jmin(MAX_PART_SIZE, nextPowerOfTwo(h->_MaxPartSize));
+        _MaxPartSize_ref = jmin(MAX_PART_SIZE, nextPowerOfTwo(_MaxPartSize_ref)); // Min, in case _MaxPartSize has been reduced by the user and reinit is performed as a consequence
 
         // try autodetecting host and deciding whether we need safemode (to avoid having to add another user parameter - let's see how this works for testers)
         PluginHostType me;
@@ -876,8 +885,8 @@ void mcfxConv_create(
             curConvData->getNumOutputChannels(),
             _BufferSize, 
             curConvData->getMaxLength(),
-            _ConvBufferSize,
-            h->_MaxPartSize,
+            _ConvBufferSize_ref,
+            _MaxPartSize_ref,
             h->safemode_);
 
         for (int i=0; i < curConvData->getNumIRs(); i++)
@@ -895,7 +904,7 @@ void mcfxConv_create(
 #endif
         h->_configLoaded = true;
         
-        h->latencySamples = h->safemode_ ? _ConvBufferSize : _ConvBufferSize-_BufferSize;
+        h->latencySamples = h->safemode_ ? _ConvBufferSize_ref : _ConvBufferSize_ref-_BufferSize;
 
         h->_skippedCycles.set(0);
 
@@ -1192,4 +1201,48 @@ int mcfxConv_getNumConv(void* const hMcfxConv) //TODO: use in the plugin
     Internal_Conv_struct* h = (Internal_Conv_struct*)(pData->hMCFXConv); 
 
     return h->_num_conv;
+}
+
+unsigned int mcfxConv_getMaxPartitionSize(void* const hMcfxConv)
+{
+    if (hMcfxConv == NULL) return 0; // If the handle is invalid, return 0 as the number of skipped cycles
+    McfxConvData *pData = (McfxConvData*)(hMcfxConv);
+    return pData->_MaxPartSize;
+}
+
+
+unsigned int mcfxConv_getBufferSize(void* const hMcfxConv)
+{
+    if (hMcfxConv == NULL) return 0; // If the handle is invalid, return 0 as the number of skipped cycles
+    McfxConvData *pData = (McfxConvData*)(hMcfxConv);
+    return pData->_BufferSize;
+}
+
+unsigned int mcfxConv_getConvBufferSize(void* const hMcfxConv)
+{
+    if (hMcfxConv == NULL) return 0; // If the handle is invalid, return 0 as the number of skipped cycles
+    McfxConvData *pData = (McfxConvData*)(hMcfxConv);
+    return pData->_ConvBufferSize;
+}
+
+void mcfxConv_setConvBufferSize(void* const hMcfxConv, unsigned int convBufferSize) {
+    McfxConvData* pData = (McfxConvData*)(hMcfxConv);
+
+    if (nextPowerOfTwo(convBufferSize) != pData->_ConvBufferSize) {
+        pData->_ConvBufferSize = nextPowerOfTwo(convBufferSize);
+        tvconv_reinitConvolver(hMcfxConv);
+    }
+}
+
+void mcfxConv_setMaxPartitionSize(void* const hMcfxConv, unsigned int maxPartitionSize) {
+    if (hMcfxConv == NULL) return;  // If the handle is invalid, return 0 as the number of skipped cycles
+    McfxConvData* pData = (McfxConvData*)(hMcfxConv);
+
+    if (maxPartitionSize > MAX_PART_SIZE)
+        return;
+
+    if (nextPowerOfTwo(maxPartitionSize) != pData->_MaxPartSize) {
+        pData->_MaxPartSize = nextPowerOfTwo(maxPartitionSize);
+        tvconv_reinitConvolver(hMcfxConv);
+    }
 }

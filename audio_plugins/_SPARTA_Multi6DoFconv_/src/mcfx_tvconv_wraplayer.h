@@ -140,6 +140,9 @@ void tvconv_setFiltersAndPositions(void* const hMcfxConv);
 /** Sets current sofa file path. */
 void tvconv_setSofaFilePath(void* const hMcfxConv, const char* path);
 
+/** Asks the MCFX engine to reinitialise the convolver, required after  */
+void tvconv_reinitConvolver(void* const hMcfxConv);
+
 /**
  *  Sets the target listener position.
  *
@@ -229,6 +232,24 @@ int mcfxConv_getMinOutCh(void* const hMcfxConv);
 
 /** Return the number of convolutions computed by the MCFX convolver engine for the current SOFA configuration  */
 int mcfxConv_getNumConv(void* const hMcfxConv);
+
+/** Return the maximum partition size of the MCFX convolver engine for the current SOFA configuration */
+unsigned int mcfxConv_getMaxPartitionSize(void* const hMcfxConv);
+
+/** Return the buffer size of the MCFX convolver engine for the current SOFA configuration */
+unsigned int mcfxConv_getBufferSize(void* const hMcfxConv);
+
+/** Return the buffer size of the MCFX convolver engine for the current SOFA configuration */
+unsigned int mcfxConv_getConvBufferSize(void* const hMcfxConv);
+
+
+
+/** Set the buffer size of the MCFX convolver engine, which corresponds to the size of the first conv. partition in the non-uniform Conv. partitioning scheme*/
+void mcfxConv_setConvBufferSize(void* const hMcfxConv, unsigned int convBufferSize);
+
+/** Set the Maximum partition size (non uniform conv partitioning) of the MCFX convolver engine*/
+void mcfxConv_setMaxPartitionSize(void* const hMcfxConv, unsigned int maxPartitionSize);
+
 
 
 #ifdef __cplusplus
