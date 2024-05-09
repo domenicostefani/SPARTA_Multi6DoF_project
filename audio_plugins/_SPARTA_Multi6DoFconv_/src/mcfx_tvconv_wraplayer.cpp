@@ -29,6 +29,7 @@
 
 #include "mcfx_tvconv_wraplayer.h"
 
+
 /* ZITA defines*/
 #ifdef USE_ZITA_CONVOLVER //TODO: fix ZITA with new multi convolver paradigm
     #define CONVPROC_SCHEDULER_PRIORITY 0
@@ -37,11 +38,21 @@
 #endif
 
 #define MAX_PART_SIZE 8192
+#define MAX_NCONVOLVERS 21
+#define DEF_NCONVOLVERS 5
 
 // ------ Internal functions ------ //
 void internal_setCodecStatus(void* const hTVCnv, CODEC_STATUS newStatus);
 void internal_findNearestNeigbour(void* const hTVCnv);
 void internal_setMinMaxDimensions(void* const hTVCnv);
+
+struct CrossfadedConvInfo {
+    int pos_idx; // The position index for which the convolver is still active
+    bool isProcessing;
+    bool isFadingIn, isFadingOut;
+    int age; // how many samples the current convolver has been active for. Used for convolver "Stealing" when the oldest convolver is replaced
+    float gain = 1.0f;
+};
 
 typedef struct _internal_MCFXConv_struct {
 // int hopSize, fftSize, nBins;
@@ -60,9 +71,18 @@ typedef struct _internal_MCFXConv_struct {
 #ifdef USE_ZITA_CONVOLVER //TODO: fix ZITA with new multi convolver paradigm
     Convproc* zita_conv; /* zita-convolver engine class instances */
 #else
-    // Array with n convolvers, one for each listener position. Only one is used at a time for a static listener
-    juce::OwnedArray<MtxConvMaster>* mtxconv_s;
-    // MtxConvMaster* mtxconv_s;
+
+    #if MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE
+        juce::OwnedArray<MtxConvMaster>* mtxconv_s; // One convolver per position, no crossfade  (You can hear clicks when changing positions, plus very inefficient in terms of CPU & memory usage)
+    #elif MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+        MtxConvMaster* mtxconv; // Single convolver with no crossfade between positions (You can hear clicks when changing positions)
+    #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+        juce::OwnedArray<MtxConvMaster>* mtxconv_xfd_s; // Multiple convolvers with crossfade between positions
+        juce::OwnedArray<CrossfadedConvInfo>* mtxconv_xfd_info_s;
+    #else
+        #error "Invalid MCFX_CONVOLVER_MODE"
+    #endif
+
 #endif
     // Array with n Convolver data structures, each containing the filter data for a listener position
     juce::OwnedArray<ConvolverData>* convdata_s;
@@ -77,14 +97,288 @@ typedef struct _internal_MCFXConv_struct {
     int _num_conv;
 
     int latencySamples = 0;
+
+
+    int posIdx_last;
+
+    #if MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE
+    #elif MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+    #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+        int current_active_convolver_idx = -1;
+    #else
+        #error "Invalid MCFX_CONVOLVER_MODE"
+    #endif
 } Internal_Conv_struct;
 
 // --- End of internal functions -- //
 
-// --- From SAF utilities --- //
-void mcfxConv_create(void** const phMCFXc, int _BufferSize, unsigned int& _ConvBufferSize_ref, float** H, int length_h, int nIRs, int nCHout, int initIdx, double sampleRate, int ir_fs, unsigned int& _MaxPartSize_ref);
-void mcfxConv_destroy(void** const phMCFXc);
-void mcfxConv_apply(void* const hTVC, float* inputSig, float* outputSig, int irIdx);
+
+/* ====================================== */
+/*  MCFX Create, Destroy, Apply functions */
+/* ====================================== */
+
+void mcfxConv_create(
+    void** const phMCFXc,
+    int _BufferSize,
+    unsigned int& _ConvBufferSize_ref,
+    float** H, /* nIRs x FLAT(nCHout x length_h) */
+    int length_h,
+    int nIRs,
+    int nCHout,
+    int initIdx,
+    double sampleRate,
+    int ir_fs,
+    unsigned int& _MaxPartSize_ref
+   #if MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE
+   #elif MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+   #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+    ,int num_xfd_convolvers
+   #else
+    #error "Invalid MCFX_CONVOLVER_MODE"
+   #endif
+    ) {
+
+    *phMCFXc = malloc1d(sizeof(Internal_Conv_struct));
+    Internal_Conv_struct* h = (Internal_Conv_struct*)(*phMCFXc);
+
+    /* INIT Mcfx params */
+    h->_configLoaded = false;
+    h->_skippedCycles = 0;   
+    h->_min_in_ch = 0;
+    h->_min_out_ch = 0;
+    h->_num_conv = 0;
+    /* End of Mcfx param init */
+
+    h->posIdx_last = -1;
+    
+    // Ensure that the first partition size (or conv buffer size) is at least as large as the block size 
+    if (_ConvBufferSize_ref < _BufferSize) _ConvBufferSize_ref = _BufferSize;
+    _ConvBufferSize_ref = nextPowerOfTwo(_ConvBufferSize_ref);
+
+    int nCHin = 1;  // TODO: pass this as argument as soon as multisource suppoert is enabled
+
+
+    #if MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE
+            h->mtxconv_s = new juce::OwnedArray<MtxConvMaster>();
+            for (int listenerPosition = 0; listenerPosition < nIRs; listenerPosition++) {
+                h->mtxconv_s->add(new MtxConvMaster);
+            }
+    #elif MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+        h->mtxconv = new MtxConvMaster;
+    #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+        h->mtxconv_xfd_s = new juce::OwnedArray<MtxConvMaster>();
+        h->mtxconv_xfd_info_s = new juce::OwnedArray<CrossfadedConvInfo>();
+
+        for (int conv_idx = 0; conv_idx < num_xfd_convolvers; conv_idx++) {
+            h->mtxconv_xfd_s->add(new MtxConvMaster);
+            h->mtxconv_xfd_info_s->add(new CrossfadedConvInfo);
+        }
+    #else
+        #error "Invalid MCFX_CONVOLVER_MODE"
+    #endif
+
+    h->convdata_s = new juce::OwnedArray<ConvolverData>();
+
+    // Load the IR matrices in the way that the MtxConvMaster class expects
+    // through the ConvolverData class
+    for (int listenerPosition = 0; listenerPosition < nIRs; listenerPosition++) {
+        h->convdata_s->add(new ConvolverData);
+        ConvolverData* curConvData = h->convdata_s->getUnchecked(listenerPosition);
+        curConvData->setSampleRate(sampleRate);
+
+        float* curPositionH = H[listenerPosition];
+        for (int out_ch = 0; out_ch < nCHout; out_ch++) {
+            float* curOutchanH = curPositionH + out_ch * length_h;
+            for (int in_ch = 0; in_ch < nCHin; in_ch++) {
+                float* curSingleIR = curOutchanH;  // TODO: change this as soon as multipleSource support is added; use in_ch to address the correct IR
+                std::cout << "Loading IR for -> posIdx: " << listenerPosition << " out_ch: " << out_ch << " in_ch: " << in_ch << std::endl;
+
+                float* const* curSingleIRPtr = &curSingleIR;
+                AudioBuffer<float> TempAudioBuffer(curSingleIRPtr, 1, length_h);  // This replaced the following line from MCFX: AudioBuffer<float> TempAudioBuffer(1,256); AND the loading of the ir from wav file
+
+                float gain = 1.f;  // Feature of MCFX conf, not used in this implementation
+                int delay = 0;     // Feature of MCFX conf, not used in this implementation
+
+                {
+                    double src_samplerate = (double)ir_fs;
+                    // Differently from mcfx convolver, in_ch and out_ch are zero-based indexes so the first channel is 0, second 1 etc
+
+                    curConvData->addIR(in_ch, out_ch, 0, delay, 0, TempAudioBuffer, 0, src_samplerate);
+
+                    // String debug; //TODO: fix MCFX debug print
+                    // debug << "conv # " << conv_data.getNumIRs() << " " << IrFilename.getFullPathName() << " (" << TempAudioBuffer.getNumSamples() << " smpls) loaded";
+                    // if (src_samplerate != _SampleRate)
+                    // debug << " (resampled to " << conv_data.getLength(conv_data.getNumIRs()-1) <<  " smpls)";
+                    // DebugPrint(debug);
+                    // this->_presetLoadState = PresetLoadState::Loaded;
+
+                }
+
+
+            } // end check channel assignment
+            
+        }
+#ifdef USE_ZITA_CONVOLVER  // TODO: fix ZITA with new multi convolver paradigm
+        int err = 0;
+
+        unsigned int options = 0;
+
+        options |= Convproc::OPT_FFTW_MEASURE;
+        options |= Convproc::OPT_VECTOR_MODE;
+
+        zita_conv.set_options(options);
+        zita_conv.set_density(0.5);
+
+        printf("max length: %lli \n", conv_data.getMaxLength());
+
+        err = zita_conv.configure(conv_data.getNumInputChannels(), conv_data.getNumOutputChannels(), (unsigned int)conv_data.getMaxLength(), _BufferSize, _ConvBufferSize_ref, Convproc::MAXPART);
+
+        for (int i = 0; i < conv_data.getNumIRs(); i++) {
+            err = zita_conv.impdata_create(conv_data.getInCh(i), conv_data.getOutCh(i), 1, (float*)conv_data.getIR(i)->getReadPointer(0), 0, (unsigned int)conv_data.getLength(i));
+        }
+
+        zita_conv.print();
+        zita_conv.start_process(CONVPROC_SCHEDULER_PRIORITY, CONVPROC_SCHEDULER_CLASS);
+
+#else
+
+        // _min_in_ch = conv_data.getNumInputChannels();
+        // _min_out_ch = conv_data.getNumOutputChannels();
+        // _num_conv = conv_data.getNumIRs();
+        // Since we are here initializing multiple convolvers, we replace the previous three lines with setting the various values as a MAX of their current value and the new value
+        // These should anyway be all equal in case of a properly created SOFA
+        if (h->_min_in_ch!=0 && h->_min_in_ch != curConvData->getNumInputChannels())
+            throw std::invalid_argument("Number of input channels in the SOFA file is not consistent across all listener positions");//TODO: Replace this with a non-fatal error
+        h->_min_in_ch = jmax(h->_min_in_ch, curConvData->getNumInputChannels());
+        if (h->_min_out_ch!=0 && h->_min_out_ch != curConvData->getNumOutputChannels())
+            throw std::invalid_argument("Number of output channels in the SOFA file is not consistent across all listener positions");//TODO: Replace this with a non-fatal error
+        h->_min_out_ch = jmax(h->_min_out_ch, curConvData->getNumOutputChannels());
+        if (h->_num_conv!=0 && h->_num_conv != curConvData->getNumIRs())
+            throw std::invalid_argument("Number of IRs in the SOFA file is not consistent across all listener positions");//TODO: Replace this with a non-fatal error
+        h->_num_conv = jmax(h->_num_conv, curConvData->getNumIRs());
+    }
+
+
+
+    _MaxPartSize_ref = jmin(MAX_PART_SIZE, nextPowerOfTwo(_MaxPartSize_ref)); // Min, in case _MaxPartSize has been reduced by the user and reinit is performed as a consequence
+
+    // try autodetecting host and deciding whether we need safemode (to avoid having to add another user parameter - let's see how this works for testers)
+    PluginHostType me;
+    h->safemode_ = me.isAdobeAudition() || me.isPremiere() || me.isSteinberg(); // probably an incomplete list
+
+
+
+    #if MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE
+        int convolversToInit = nIRs;
+    #elif MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+        int convolversToInit = 1;
+    #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+        int convolversToInit = num_xfd_convolvers;
+    #else
+     #error "Invalid MCFX_CONVOLVER_MODE"
+    #endif
+
+
+
+    // Here we initialize ALL the convolvers used.
+    // if SINGLECONVOLVER is defined, only one convolver is initialized
+    // if CROSSFADED_MULTIPLE_CONVOLVERS is defined, a set number of convolvers (< or > than the number of positions) is initialized (each conv with data from a different position)
+    // if neither is defined, a convolver is initialized for each position, with the data from that position
+    for (int conv_idx = 0; conv_idx < convolversToInit; conv_idx++) {
+        int data_idx = conv_idx%h->convdata_s->size(); // in the case of CROSSFADED_MULTIPLE_CONVOLVERS and more convolvers than positions, we cycle through the positions
+        ConvolverData* curConvData = h->convdata_s->getUnchecked(data_idx);
+
+
+    #if MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE
+        MtxConvMaster* curMtxConv = h->mtxconv_s->getUnchecked(conv_idx);
+    #elif MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+        MtxConvMaster* curMtxConv = h->mtxconv;
+    #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+        MtxConvMaster* curMtxConv = h->mtxconv_xfd_s->getUnchecked(conv_idx);
+
+        CrossfadedConvInfo* curXfdInfo = h->mtxconv_xfd_info_s->getUnchecked(conv_idx);
+        // CREATE CrossfadedConvInfo
+        curXfdInfo->pos_idx = data_idx;
+        curXfdInfo->isProcessing = false;
+        curXfdInfo->isFadingIn = false;
+        curXfdInfo->isFadingOut = false;
+        curXfdInfo->age = 0;
+        curXfdInfo->gain = 1.0f;
+        // ---
+    #else
+        #error "Invalid MCFX_CONVOLVER_MODE"
+    #endif
+
+        curMtxConv->Configure(
+            curConvData->getNumInputChannels(),
+            curConvData->getNumOutputChannels(),
+            _BufferSize, 
+            curConvData->getMaxLength(),
+            _ConvBufferSize_ref,
+            _MaxPartSize_ref,
+            h->safemode_);
+
+        for (int i=0; i < curConvData->getNumIRs(); i++)
+        {
+            // if (threadShouldExit()) return; //TODO: remove thread stuff
+            curMtxConv->AddFilter(curConvData->getInCh(i), curConvData->getOutCh(i), *curConvData->getIR(i));
+            // no delay and length yet!
+        }
+        curMtxConv->StartProc(); //TODO: figure out when to enable
+    }
+#endif
+
+    h->_configLoaded = true;
+    h->latencySamples = h->safemode_ ? _ConvBufferSize_ref : _ConvBufferSize_ref-_BufferSize;
+    h->_skippedCycles.set(0);
+}
+
+void mcfxConv_destroy(void** const phMCFXc) {
+    Internal_Conv_struct* h = (Internal_Conv_struct*)(*phMCFXc);
+
+    if (h != NULL) {
+#ifdef USE_ZITA_CONVOLVER  // TODO: fix ZITA with new multi convolver paradigm
+        h->zita_conv->stop_process();
+        h->zita_conv->cleanup();
+        delete h->zita_conv;
+#else  // Use MtxConvolver
+
+    #if MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE
+        // Stop processing with the convolver for each listener position (all convolvers)
+        for (int listenerPosition = 0; listenerPosition < h->mtxconv_s->size(); listenerPosition++) {
+            MtxConvMaster* curMtxConv = h->mtxconv_s->getUnchecked(listenerPosition);
+            curMtxConv->StopProc();
+            curMtxConv->Cleanup();
+        }
+        h->mtxconv_s->clear();  // Clear the array (which internally deletes the objects)
+        delete h->mtxconv_s;    // Delete the array
+    #elif MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+        h->mtxconv->StopProc();
+        h->mtxconv->Cleanup();
+        delete h->mtxconv;
+    #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+        // Stop processing for all convolvers
+        for (int conv_idx = 0; conv_idx < h->mtxconv_xfd_s->size(); conv_idx++) {
+            MtxConvMaster* curMtxConv = h->mtxconv_xfd_s->getUnchecked(conv_idx);
+            curMtxConv->StopProc();
+            curMtxConv->Cleanup();
+        }
+        h->mtxconv_xfd_s->clear();  // Clear convolver and info arrays (whoch internally deletes the objects)
+        h->mtxconv_xfd_info_s->clear();
+        delete h->mtxconv_xfd_s;  // Delete the arrays
+        delete h->mtxconv_xfd_info_s;
+    #else
+        #error "Invalid MCFX_CONVOLVER_MODE"
+    #endif
+
+        h->convdata_s->clear();
+        delete h->convdata_s;
+#endif  // End ZITA/MtxConvolver ifdef
+    }
+    free(h);
+    h = NULL;
+    *phMCFXc = NULL;
+}
 
 /* ========================================================================== */
 /*                            Internal Parameters                             */
@@ -102,8 +396,7 @@ void mcfxConv_apply(void* const hTVC, float* inputSig, float* outputSig, int irI
 typedef float vectorND[NUM_DIMENSIONS];
 
 /** Main structure for MCFX convolver  */
-typedef struct _mcfxconv
-{
+typedef struct _mcfxconv {
     /* FIFO buffers */
     int FIFO_idx;
     float inFIFO[MAX_NUM_CHANNELS][MAX_FRAME_SIZE];
@@ -112,40 +405,40 @@ typedef struct _mcfxconv
     /* Internal buffers */
     float** inputFrameTD;
     float** outputFrameTD;
-    
+
     /* internal */
-    void* hMCFXConv;            /**< INTERNAL MCFX convolver handle */
+    void* hMCFXConv; /**< INTERNAL MCFX convolver handle */
     // [[deprecated("Replaced by _BufferSize from the MCFX convolver")]]
     // int hostBlockSize;          /**< current host block size */
     // [[deprecated("No longer used since MCXF convolver does not clamp the block size")]]
     // int hostBlockSize_clamped;  /**< Clamped between MIN and #MAX_FRAME_SIZE */
     // [[deprecated("Replaced by _SampleRate from the MCFX convolver")]]
     // int host_fs;                /**< current samplerate of the host */
-    int reInitFilters;          /**< FLAG: 0: do not reinit, 1: reinit, 2: reinit in progress */
-    int nOutputChannels;        /**< number of output channels (same as the number of channels in the loaded wav) */
-    
+    int reInitFilters;   /**< FLAG: 0: do not reinit, 1: reinit, 2: reinit in progress */
+    int nOutputChannels; /**< number of output channels (same as the number of channels in the loaded wav) */
+
     int ir_fs;
-    float** irs;   /**< npositionsx x (FLAT: nfilters x filter_length) */
+    float** irs;     /**< npositionsx x (FLAT: nfilters x filter_length) */
     int nIrChannels; /**< number of filters per position */
     int ir_length;
-    
+
     /* positions */
-    vectorND* listenerPositions;       /**< The listener positions; nListenerPositions x 3 */
+    vectorND* listenerPositions; /**< The listener positions; nListenerPositions x 3 */
     int nListenerPositions;
-    vectorND minDimensions;            /**< Minimum values across all dimensions */
-    vectorND maxDimensions;            /**< Maximum values across all dimensions */
+    vectorND minDimensions; /**< Minimum values across all dimensions */
+    vectorND maxDimensions; /**< Maximum values across all dimensions */
     int position_idx;
     vectorND sourcePosition;
-    
+
     /* flags/status */
     CODEC_STATUS codecStatus;
     float progressBar0_1;
     char* progressBarText;
     PROC_STATUS procStatus;
-    
+
     /* user parameters */
-    int nInputChannels;        /**< number of input channels */
-    vectorND targetPosition;    
+    int nInputChannels; /**< number of input channels */
+    vectorND targetPosition;
     char* sofa_filepath;
     SAF_TVCONV_ERROR_CODES sofa_file_error;
 
@@ -163,6 +456,11 @@ typedef struct _mcfxconv
 
     /* Added when porting MCFX to 6DoF*/
     bool resampled_ir = false;
+
+#if MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+    /* For Crossfade we use a number of convolvers that handle multiple convolutions while switching between matrices */
+    int num_xfd_convolvers;
+#endif
 } McfxConvData;
 
 void tvconv_create(void** const phMcfxConv) {
@@ -213,6 +511,10 @@ void tvconv_create(void** const phMcfxConv) {
     pData->_isProcessing = false;
     pData->_MaxPartSize = MAX_PART_SIZE;
     pData->_paramReload = false;
+    
+#if MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE //[ds 2024]
+    pData->num_xfd_convolvers = DEF_NCONVOLVERS; // Default number of convolvers for crossfade
+#endif
 }
 
 void tvconv_destroy(void** const phMcfxConv) {
@@ -252,17 +554,54 @@ void tvconv_init(
     if(pData->_BufferSize != hostBlockSize){
         pData->_BufferSize = hostBlockSize;
         pData->_ConvBufferSize = hostBlockSize; //TODO: check how this works with SPARTAS way of handling blocksize in Init function calls 
-        // pData->hostBlockSize_clamped = SAF_CLAMP(pData->_BufferSize, MIN_FRAME_SIZE, MAX_FRAME_SIZE);
+        // pData->hostBlockSize_clamped = SAF_CLAMP(pData->_BufferSize, MIN_FRAME_SIZE, MAX_FRAME_SIZE);mcfxConv_replaceConvData
         pData->reInitFilters = 1;
         internal_setCodecStatus(hConvData, CODEC_STATUS_NOT_INITIALISED); 
     }
     tvconv_checkReInit(hConvData);
 }
 
+#if MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+/**
+ * @brief Replace the current convolver data with the one at the new listener position, without allocating new memory
+ * 
+ * @param innerConvStruct 
+ * @param newListenerPos 
+ */
+void mcfxConv_replaceConvData(void* const hMcfxConv, int newListenerPos) {
+    if (hMcfxConv == NULL) return;
+    McfxConvData* pData = (McfxConvData*)(hMcfxConv);
+    if (pData->hMCFXConv == NULL) return;
+    Internal_Conv_struct* h = (Internal_Conv_struct*)(pData->hMCFXConv);
+
+    #if 0 //TODO: remove
+    curMtxConv->Configure(
+        curConvData->getNumInputChannels(),
+        curConvData->getNumOutputChannels(),
+        _BufferSize,
+        curConvData->getMaxLength(),
+        _ConvBufferSize_ref,
+        _MaxPartSize_ref,
+        h->safemode_);
+    #endif
+    if (newListenerPos >= h->convdata_s->size())
+        return;
+
+    ConvolverData* newPosConvData = h->convdata_s->getUnchecked(newListenerPos);
+    MtxConvMaster* pMtxConv = h->mtxconv;
+
+    for (int i = 0; i < newPosConvData->getNumIRs(); i++) {
+        pMtxConv->ReplaceFilter(newPosConvData->getInCh(i), newPosConvData->getOutCh(i), *newPosConvData->getIR(i));
+    }
+}
+#endif
+
 void mcfxConv_process(void* const hMcfxConv,
                       juce::AudioBuffer<float>& buffer,
                       int nInputs,
                       int nOutputs) {
+
+
     McfxConvData* pData = (McfxConvData*)(hMcfxConv);
 
     int nSamples = buffer.getNumSamples();
@@ -274,15 +613,37 @@ void mcfxConv_process(void* const hMcfxConv,
         std::cout << "Currently Processing" << std::endl
                   << std::flush << std::fflush;
         Internal_Conv_struct* h = (Internal_Conv_struct*)(pData->hMCFXConv);
-        volatile int current_pos_idx = pData->position_idx;  // TODO: remove volatile
-        volatile size_t convolverVectorSize = h->mtxconv_s->size();
-        if (current_pos_idx >= convolverVectorSize) {
-            pData->procStatus = PROC_STATUS_NOT_ONGOING;
-            return;  // TODO: check when this is the case
-        }
-        MtxConvMaster* currentMtxConv = h->mtxconv_s->getUnchecked(current_pos_idx);
+
         //<-- From PluginProcessor.cpp of MCFXConvolver
-        if (h != NULL && h->_configLoaded) { // TODO: make _configLoaded become truee
+        if (h != NULL && h->_configLoaded) { // TODO: make _configLoaded become true
+
+
+        #if MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE
+            size_t convolverVectorSize = h->convdata_s->size();
+
+            int current_pos_idx = pData->position_idx;
+            if (current_pos_idx >= convolverVectorSize) {
+                pData->procStatus = PROC_STATUS_NOT_ONGOING;
+                return;  // TODO: check when this is the case
+            }
+            MtxConvMaster* curMtxConv = h->mtxconv_s->getUnchecked(current_pos_idx);
+        #elif MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+            //// If a single convolver is in use, filters need to be replaced whenever the position changes // Cross-fading is not implemented yet
+
+            MtxConvMaster* curMtxConv = h->mtxconv;
+            int current_pos_idx = pData->position_idx;
+            // If the current_pos_idx is different than the previous position, replace the filters and update previous position
+            if (current_pos_idx != h->posIdx_last) {
+                mcfxConv_replaceConvData((void*)pData, current_pos_idx);
+                h->posIdx_last = current_pos_idx;
+            }
+        #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+                //TODO: Continue here with the crossfade implementation                
+                MtxConvMaster* curMtxConv = h->mtxconv_xfd_s->getUnchecked(h->current_active_convolver_idx);
+        #else
+        #error "Invalid MCFX_CONVOLVER_MODE"
+        #endif
+
             pData->_isProcessing = true;
             int curNumSamples = buffer.getNumSamples();
 
@@ -299,10 +660,10 @@ void mcfxConv_process(void* const hMcfxConv,
                 memcpy(buffer.getWritePointer(i), outdata, curNumSamples * sizeof(float));
             }
 #else
-            // currentMtxConv->processBlock(buffer, buffer, isNonRealtime()); // if isNotRealtime always set to true!
-            currentMtxConv->processBlock(buffer, buffer, curNumSamples, true);  // try to always wait except - add a special flag to deactivate waiting...
+            // curMtxConv->processBlock(buffer, buffer, isNonRealtime()); // if isNotRealtime always set to true!
+            curMtxConv->processBlock(buffer, buffer, curNumSamples, true);  // try to always wait except - add a special flag to deactivate waiting...
 
-            h->_skippedCycles.set(currentMtxConv->getSkipCount());
+            h->_skippedCycles.set(curMtxConv->getSkipCount());
 #endif
 
             pData->_isProcessing = false;
@@ -421,6 +782,9 @@ void tvconv_checkReInit(void* const hMcfxConv) {
                               pData->_SampleRate, // _sampleRate was passed as required by MCFX convdata, as double
                               pData->ir_fs,       // Original IR samplerate for resampling
                               pData->_MaxPartSize // PASSED AS REFERENCE
+                             #if MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE //[ds 2024]
+                              ,pData->num_xfd_convolvers
+                             #endif
                               ); 
             if (checkAndNotifyResampling) {
                 pData->resampled_ir = true;
@@ -740,383 +1104,6 @@ void internal_setMinMaxDimensions(void* const hTVCnv)
 
 
 
-/* ========================================================================== */
-/*                                FROM_SAF_UTILITIES                          */
-/* ========================================================================== */
-
-void mcfxConv_create(
-    void** const phMCFXc,
-    int _BufferSize,
-    unsigned int& _ConvBufferSize_ref,
-    float** H, /* nIRs x FLAT(nCHout x length_h) */
-    int length_h,
-    int nIRs,
-    int nCHout,
-    int initIdx,
-    double sampleRate,
-    int ir_fs,
-    unsigned int& _MaxPartSize_ref) {
-    *phMCFXc = malloc1d(sizeof(Internal_Conv_struct));
-    Internal_Conv_struct* h = (Internal_Conv_struct*)(*phMCFXc);
-
-    /* INIT Mcfx params */
-    h->_configLoaded = false;
-    h->_skippedCycles = 0;   
-    h->_min_in_ch = 0;
-    h->_min_out_ch = 0;
-    h->_num_conv = 0;
-    /* End of Mcfx param init */
-    
-    // Ensure that the first partition size (or conv buffer size) is at least as large as the block size 
-    if (_ConvBufferSize_ref < _BufferSize) _ConvBufferSize_ref = _BufferSize;
-    _ConvBufferSize_ref = nextPowerOfTwo(_ConvBufferSize_ref);
-
-    int nCHin = 1;  // TODO: pass this as argument as soon as multisource suppoert is enabled
-
-    // Create an instance of the MtxConvMaster class for each listener position,
-    // same for ConvolverData
-    h->mtxconv_s = new juce::OwnedArray<MtxConvMaster>();
-    h->convdata_s = new juce::OwnedArray<ConvolverData>();
-    for (int listenerPosition = 0; listenerPosition < nIRs; listenerPosition++) {
-#ifdef USE_ZITA_CONVOLVER  // TODO: fix ZITA with new multi convolver paradigm
-        h->zita_conv_s.getUnchecked(listenerPosition) = new Convproc();
-#else
-        h->mtxconv_s->add(new MtxConvMaster);
-        h->convdata_s->add(new ConvolverData);
-#endif
-    }
-
-    // Load the IR matrices in the way that the MtxConvMaster class expects
-    // through the ConvolverData class
-    for (int listenerPosition = 0; listenerPosition < nIRs; listenerPosition++) {
-        MtxConvMaster* curMtxConv = h->mtxconv_s->getUnchecked(listenerPosition);
-        ConvolverData* curConvData = h->convdata_s->getUnchecked(listenerPosition);
-        curConvData->setSampleRate(sampleRate);
-
-        float* curPositionH = H[listenerPosition];
-        for (int out_ch = 0; out_ch < nCHout; out_ch++) {
-            float* curOutchanH = curPositionH + out_ch * length_h;
-            for (int in_ch = 0; in_ch < nCHin; in_ch++) {
-                float* curSingleIR = curOutchanH;  // TODO: change this as soon as multipleSource support is added; use in_ch to address the correct IR
-                std::cout << "Loading IR for -> posIdx: " << listenerPosition << " out_ch: " << out_ch << " in_ch: " << in_ch << std::endl;
-
-                float* const* curSingleIRPtr = &curSingleIR;
-                AudioBuffer<float> TempAudioBuffer(curSingleIRPtr, 1, length_h);  // This replaced the following line from MCFX: AudioBuffer<float> TempAudioBuffer(1,256); AND the loading of the ir from wav file
-
-                float gain = 1.f;  // Feature of MCFX conf, not used in this implementation
-                int delay = 0;     // Feature of MCFX conf, not used in this implementation
-
-                /*
-                int offset = 0; TODO: remove unused
-                int length = 0;
-                int channel = 0;
-                String filename;
-                if ( ( in_ch < 1 ) || ( in_ch > NUM_CHANNELS ) || ( out_ch < 1 ) || ( out_ch > NUM_CHANNELS ) )
-                {
-
-                    this->_presetLoadState = PresetLoadState::Failed;
-                    this->_presetLoadErrorMessage = PresetLoadError::CHANNEL_ASSIGNMENT_NOT_FEASIBLE;
-                    String debug;
-                    debug << "ERROR: channel assignment not feasible: In: " << in_ch << " Out: " << out_ch;
-                    DebugPrint(debug);
-
-
-                } else {
-
-                    double src_samplerate;
-                    if (loadIr(&TempAudioBuffer, IrFilename, channel-1, src_samplerate, gain, offset, length))*/
-                {
-                    double src_samplerate = (double)ir_fs;
-                    // Differently from mcfx convolver, in_ch and out_ch are zero-based indexes so the first channel is 0, second 1 etc
-                    curConvData->addIR(in_ch, out_ch, 0, delay, 0, TempAudioBuffer, 0, src_samplerate);
-
-                    // String debug; //TODO: fix MCFX debug print
-                    // debug << "conv # " << conv_data.getNumIRs() << " " << IrFilename.getFullPathName() << " (" << TempAudioBuffer.getNumSamples() << " smpls) loaded";
-                    // if (src_samplerate != _SampleRate)
-                    // debug << " (resampled to " << conv_data.getLength(conv_data.getNumIRs()-1) <<  " smpls)";
-                    // DebugPrint(debug);
-                    // this->_presetLoadState = PresetLoadState::Loaded;
-
-                } /*else {TODO: remove unused
-                    this->_presetLoadState = PresetLoadState::Failed;
-                    this->_presetLoadErrorMessage = PresetLoadError::NOT_LOADED;
-                    String debug;
-                    debug << "ERROR: not loaded: " << IrFilename.getFullPathName();
-                    DebugPrint(debug);
-
-                }
-
-
-            } // end check channel assignment
-            */
-            }
-        }
-#ifdef USE_ZITA_CONVOLVER  // TODO: fix ZITA with new multi convolver paradigm
-        int err = 0;
-
-        unsigned int options = 0;
-
-        options |= Convproc::OPT_FFTW_MEASURE;
-        options |= Convproc::OPT_VECTOR_MODE;
-
-        zita_conv.set_options(options);
-        zita_conv.set_density(0.5);
-
-        printf("max length: %lli \n", conv_data.getMaxLength());
-
-        err = zita_conv.configure(conv_data.getNumInputChannels(), conv_data.getNumOutputChannels(), (unsigned int)conv_data.getMaxLength(), _BufferSize, _ConvBufferSize_ref, Convproc::MAXPART);
-
-        for (int i = 0; i < conv_data.getNumIRs(); i++) {
-            err = zita_conv.impdata_create(conv_data.getInCh(i), conv_data.getOutCh(i), 1, (float*)conv_data.getIR(i)->getReadPointer(0), 0, (unsigned int)conv_data.getLength(i));
-        }
-
-        zita_conv.print();
-        zita_conv.start_process(CONVPROC_SCHEDULER_PRIORITY, CONVPROC_SCHEDULER_CLASS);
-
-#else
-        _MaxPartSize_ref = jmin(MAX_PART_SIZE, nextPowerOfTwo(_MaxPartSize_ref)); // Min, in case _MaxPartSize has been reduced by the user and reinit is performed as a consequence
-
-        // try autodetecting host and deciding whether we need safemode (to avoid having to add another user parameter - let's see how this works for testers)
-        PluginHostType me;
-        h->safemode_ = me.isAdobeAudition() || me.isPremiere() || me.isSteinberg(); // probably an incomplete list
-
-        curMtxConv->Configure(
-            curConvData->getNumInputChannels(),
-            curConvData->getNumOutputChannels(),
-            _BufferSize, 
-            curConvData->getMaxLength(),
-            _ConvBufferSize_ref,
-            _MaxPartSize_ref,
-            h->safemode_);
-
-        for (int i=0; i < curConvData->getNumIRs(); i++)
-        {
-            // if (threadShouldExit()) //TODO: remove thread stuff
-            //     return;
-
-            curMtxConv->AddFilter(curConvData->getInCh(i), curConvData->getOutCh(i), *curConvData->getIR(i));
-            // no delay and length yet!
-        }
-
-        
-        curMtxConv->StartProc(); //TODO: figure out when to enable
-        
-#endif
-        h->_configLoaded = true;
-        
-        h->latencySamples = h->safemode_ ? _ConvBufferSize_ref : _ConvBufferSize_ref-_BufferSize;
-
-        h->_skippedCycles.set(0);
-
-        // _min_in_ch = conv_data.getNumInputChannels();
-        // _min_out_ch = conv_data.getNumOutputChannels();
-        // _num_conv = conv_data.getNumIRs();
-        // Since we are here initializing multiple convolvers, we replace the previous three lines with setting the various values as a MAX of their current value and the new value
-        // These should anyway be all equal in case of a properly created SOFA
-        if (h->_min_in_ch!=0 && h->_min_in_ch != curConvData->getNumInputChannels())
-            throw std::invalid_argument("Number of input channels in the SOFA file is not consistent across all listener positions");//TODO: Replace this with a non-fatal error
-        h->_min_in_ch = jmax(h->_min_in_ch, curConvData->getNumInputChannels());
-        if (h->_min_out_ch!=0 && h->_min_out_ch != curConvData->getNumOutputChannels())
-            throw std::invalid_argument("Number of output channels in the SOFA file is not consistent across all listener positions");//TODO: Replace this with a non-fatal error
-        h->_min_out_ch = jmax(h->_min_out_ch, curConvData->getNumOutputChannels());
-        if (h->_num_conv!=0 && h->_num_conv != curConvData->getNumIRs())
-            throw std::invalid_argument("Number of IRs in the SOFA file is not consistent across all listener positions");//TODO: Replace this with a non-fatal error
-        h->_num_conv = jmax(h->_num_conv, curConvData->getNumIRs());
-
-/*
-        _configFile = configFile;
-
-
-        this->_presetLoadState = PresetLoadState::Loaded;
-        DebugPrint("Configuration loaded, maximum filter length: " + String(conv_data.getMaxLengthInSeconds(), 2) + "[s], " + String(conv_data.getMaxLength()) + " [smpls]");
-        DebugPrint("Plugin Latency: " + String(getLatencySamples()) + " [smpls]");
-        sendChangeMessage(); // notify editor
-        */
-    }
-
-    // int np, no, nb, n;
-    // float* h_pad, *h_pad_2hops;
-
-    // h->hopSize = hopSize;
-    // h->length_h = length_h;
-    // h->nIRs = nIRs;
-    // h->nCHout = nCHout;
-    // if (initIdx < nIRs){
-    //     h->posIdx_last = initIdx;
-    //     h->posIdx_last2 = initIdx;
-    // } else {
-    //     h->posIdx_last = 0;
-    //     h->posIdx_last2 = 0;
-    // }
-
-    // /* intialise partitioned convolution mode */
-    // h->length_h = length_h;
-    // h->fftSize = 2*(h->hopSize);
-    // h->nBins = hopSize+1;
-    // h->numFilterBlocks = (int)ceilf((float)length_h/(float)hopSize); /* number of partitions */
-    // saf_assert(h->numFilterBlocks>=1, "Number of filter blocks/partitions must be at least 1");
-
-    // /* Allocate memory for buffers and perform fft on partitioned H */
-    // h_pad = (float*)calloc1d(h->numFilterBlocks * hopSize, sizeof(float));
-    // h_pad_2hops = (float*)calloc1d(2 * hopSize, sizeof(float));
-    // h->Hpart_f = (float_complex***) malloc2d(nIRs, nCHout, sizeof(float_complex*));
-    // h->X_n = (float_complex*)calloc1d(h->numFilterBlocks * (h->nBins), sizeof(float_complex));
-    // h->HX_n = (float_complex*)malloc1d(h->numFilterBlocks * (h->nBins) * sizeof(float_complex));
-    // h->x_pad = (float*) calloc1d(2 * hopSize, sizeof(float));
-    // h->hx_n = (float*) malloc1d(h->numFilterBlocks*(h->fftSize)*sizeof(float));
-    // h->y_n_overlap = (float*) calloc1d(nCHout*hopSize, sizeof(float));
-    // h->y_n_overlap_last = (float*) calloc1d(nCHout*hopSize, sizeof(float));
-    // h->z_n = (float*) malloc1d((h->fftSize) * sizeof(float));
-    // h->z_n_last = (float*) malloc1d((h->fftSize) * sizeof(float));
-    // h->z_n_last2 = (float*) malloc1d((h->fftSize) * sizeof(float));
-    // h->out1 = (float*) malloc1d(hopSize * sizeof(float));
-    // h->out2 = (float*) malloc1d(hopSize * sizeof(float));
-    // h->fadeIn = (float*) malloc1d(hopSize * sizeof(float));
-    // h->fadeOut = (float*) malloc1d(hopSize * sizeof(float));
-    // h->outFadeIn = (float*) malloc1d(hopSize * sizeof(float));
-    // h->outFadeOut = (float*) malloc1d(hopSize * sizeof(float));
-    // for(n=0; n<hopSize; n++){
-    //     h->fadeIn[n] = (float) n / (float) (hopSize-1);
-    //     h->fadeOut[n] = (float) (hopSize-1-n) / (float) (hopSize-1);
-    // }
-    // saf_rfft_create(&(h->hFFT), h->fftSize);
-    // for(np=0; np<nIRs; np++){
-    //     for(no=0; no<nCHout; no++){
-    //         h->Hpart_f[np][no] = (float_complex*)malloc1d(h->numFilterBlocks*(h->nBins)*sizeof(float_complex));
-    //         memcpy(h_pad, &H[np][no*length_h], length_h*sizeof(float)); /* zero pad filter, to be multiple of hopsize */
-    //         for (nb=0; nb<h->numFilterBlocks; nb++){
-    //             memcpy(h_pad_2hops, &(h_pad[nb*hopSize]), hopSize*sizeof(float));
-    //             saf_rfft_forward(h->hFFT, h_pad_2hops, &(h->Hpart_f[np][no][nb*(h->nBins)]));
-    //         }
-    //     }
-    // }
-
-    // free(h_pad);
-    // free(h_pad_2hops);
-}
-
-void mcfxConv_destroy(void** const phMCFXc) {
-
-    Internal_Conv_struct *h = (Internal_Conv_struct*)(*phMCFXc);
-
-    if (h != NULL) {
-#ifdef USE_ZITA_CONVOLVER  // TODO: fix ZITA with new multi convolver paradigm
-        h->zita_conv->stop_process();
-        h->zita_conv->cleanup();
-        delete h->zita_conv;
-#else
-        for (int listenerPosition = 0; listenerPosition < h->mtxconv_s->size(); listenerPosition++) {
-            h->mtxconv_s->getUnchecked(listenerPosition)->StopProc();
-            h->mtxconv_s->getUnchecked(listenerPosition)->Cleanup();
-        }
-        h->mtxconv_s->clear();
-        delete h->mtxconv_s;
-        h->convdata_s->clear();
-        delete h->convdata_s;
-#endif
-    }
-    free(h);
-    h = NULL;
-    *phMCFXc = NULL;
-    // int np, no;
-    
-    // if(h!=NULL){
-    //     saf_rfft_destroy(&(h->hFFT));
-    //     free(h->X_n);
-    //     free(h->x_pad);
-    //     free(h->z_n);
-    //     free(h->z_n_last);
-    //     free(h->z_n_last2);
-    //     free(h->hx_n);
-    //     free(h->HX_n);
-    //     free(h->y_n_overlap);
-    //     free(h->y_n_overlap_last);
-    //     free(h->out1);
-    //     free(h->out2);
-    //     free(h->fadeIn);
-    //     free(h->fadeOut);
-    //     free(h->outFadeIn);
-    //     free(h->outFadeOut);
-    //     for(np=0; np<h->nIRs; np++){
-    //         for(no=0; no<h->nCHout; no++)
-    //             free(h->Hpart_f[np][no]);
-    //     }
-    //     free(h->Hpart_f);
-//     }
-//     free(h);
-//     h=NULL;
-}
-
-// void mcfxConv_apply(void* const hTVC, float* inputSig, float* outputSig, int irIdx) {
-//     Internal_Conv_struct *h = (Internal_Conv_struct*)(hTVC);
-
-//     throw std::runtime_error("not implemented yet");
-
-//     Internal_Conv_struct *h = (Internal_Conv_struct*)(hTVC);
-//     int no, nb;
-    
-//     /* zero-pad input signals and perform fft. Store in partition slot 1. */
-//     memmove(&(h->X_n[1*(h->nBins)]), h->X_n, (h->numFilterBlocks-1)*(h->nBins)*sizeof(float_complex)); /* shuffle */
-    
-//     cblas_scopy(h->hopSize, inputSig, 1, h->x_pad, 1);
-//     saf_rfft_forward(h->hFFT, h->x_pad, h->X_n);
-    
-//     /* apply convolution and inverse fft */
-//     for(no=0; no<h->nCHout; no++){
-//         utility_cvvmul(h->Hpart_f[irIdx][no], h->X_n, h->numFilterBlocks * (h->nBins), h->HX_n); /* This is the bulk of the CPU work */
-//         for(nb=0; nb<h->numFilterBlocks; nb++)
-//             saf_rfft_backward(h->hFFT, &(h->HX_n[nb*(h->nBins)]), &(h->hx_n[nb*(h->fftSize)]));
-        
-//         /* output frame for this channel is the sum over all partitions */
-//         memset(h->z_n, 0, (h->fftSize) * sizeof(float));
-//         for(nb=0; nb<h->numFilterBlocks; nb++)
-//             cblas_saxpy(h->fftSize, 1.0f, &(h->hx_n[nb*(h->fftSize)]), 1, h->z_n, 1);
-        
-//         /* If position changed perform convolution at previous steps too */
-//         if(irIdx != h->posIdx_last){
-//             utility_cvvmul(h->Hpart_f[h->posIdx_last][no], h->X_n, h->numFilterBlocks * (h->nBins), h->HX_n);
-//             for(nb=0; nb<h->numFilterBlocks; nb++)
-//                 saf_rfft_backward(h->hFFT, &(h->HX_n[nb*(h->nBins)]), &(h->hx_n[nb*(h->fftSize)]));
-            
-//             /* output frame for this channel is the sum over all partitions */
-//             memset(h->z_n_last, 0, (h->fftSize) * sizeof(float));
-//             for(nb=0; nb<h->numFilterBlocks; nb++)
-//                 cblas_saxpy(h->fftSize, 1.0f, &(h->hx_n[nb*(h->fftSize)]), 1, h->z_n_last, 1);
-//         }
-//         else {
-//             utility_svvcopy(h->z_n, h->fftSize, h->z_n_last);
-//         }
-//         if(h->posIdx_last != h->posIdx_last2){
-//             utility_cvvmul(h->Hpart_f[h->posIdx_last2][no], h->X_n, h->numFilterBlocks * (h->nBins), h->HX_n);
-//             for(nb=0; nb<h->numFilterBlocks; nb++)
-//                 saf_rfft_backward(h->hFFT, &(h->HX_n[nb*(h->nBins)]), &(h->hx_n[nb*(h->fftSize)]));
-            
-//             /* output frame for this channel is the sum over all partitions */
-//             memset(h->z_n_last2, 0, (h->fftSize) * sizeof(float));
-//             for(nb=0; nb<h->numFilterBlocks; nb++)
-//                 cblas_saxpy(h->fftSize, 1.0f, &(h->hx_n[nb*(h->fftSize)]), 1, h->z_n_last2, 1);
-//         }
-//         else {
-//             utility_svvcopy(h->z_n_last, h->fftSize, h->z_n_last2);
-//         }
-    
-//         /* sum with overlap buffer */
-//         utility_svvadd(h->z_n_last, (const float*)&(h->y_n_overlap[no*(h->hopSize)]), h->hopSize, h->out1);
-//         utility_svvadd(h->z_n_last2, (const float*)&(h->y_n_overlap_last[no*(h->hopSize)]), h->hopSize, h->out2);
-//         /* multiply by cross-fade ramps */
-//         utility_svvmul(h->out1, (const float*)h->fadeIn, h->hopSize, h->outFadeIn);
-//         utility_svvmul(h->out2, (const float*)h->fadeOut, h->hopSize, h->outFadeOut);
-//         /* cross-fade the filered signals and copy to output buffer */
-//         utility_svvadd(h->outFadeIn, (const float*)h->outFadeOut, h->hopSize, &(outputSig[no*(h->hopSize)]));
-        
-//         /* for next iteration: */
-//         cblas_scopy(h->hopSize, &(h->z_n[h->hopSize]), 1, &(h->y_n_overlap[no*(h->hopSize)]), 1);
-//         cblas_scopy(h->hopSize, &(h->z_n_last[h->hopSize]), 1, &(h->y_n_overlap_last[no*(h->hopSize)]), 1);
-//     }
-    
-//     h->posIdx_last2 = h->posIdx_last;
-//     h->posIdx_last = irIdx;
-// }
 
 /** From MCFX Convolver PluginProcessor.cpp */
 void getIntFromLine(int& ret, String& line) {
@@ -1136,7 +1123,7 @@ void getFloatFromLine(float& ret, String& line) {
 //void unloadConfiguration(void* const hMcfxConv) {
 //    McfxConvData *pData = (McfxConvData*)(hMcfxConv);
 //    Internal_Conv_struct *h = (Internal_Conv_struct*)(pData->hMCFXConv);
-//    MtxConvMaster* currentMtxConv = h->mtxconv_s.getUnchecked(pData->position_idx);
+//    MtxConvMaster* curMtxConv = h->mtxconv_s.getUnchecked(pData->position_idx);
 //    ConvolverData* currentConvData = h->convdata_s.getUnchecked(pData->position_idx);
 //    // TODO: possibly need to check for h to be not NULL
 //    
@@ -1151,8 +1138,8 @@ void getFloatFromLine(float& ret, String& line) {
 //    h->zita_conv->stop_process();
 //    h->zita_conv->cleanup();
 //#else
-//    currentMtxConv->StopProc();
-//    currentMtxConv->Cleanup();
+//    curMtxConv->StopProc();
+//    curMtxConv->Cleanup();
 //#endif
 //
 //    currentConvData->clear();
@@ -1211,6 +1198,7 @@ unsigned int mcfxConv_getMaxPartitionSize(void* const hMcfxConv)
 }
 
 
+
 unsigned int mcfxConv_getBufferSize(void* const hMcfxConv)
 {
     if (hMcfxConv == NULL) return 0; // If the handle is invalid, return 0 as the number of skipped cycles
@@ -1246,3 +1234,50 @@ void mcfxConv_setMaxPartitionSize(void* const hMcfxConv, unsigned int maxPartiti
         tvconv_reinitConvolver(hMcfxConv);
     }
 }
+
+#if MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE //[ds 2024]
+float mcfxConv_getMaxCrossfadeTimeS(void* const hMcfxConv, bool* minReached, bool* maxReached) {
+    if (hMcfxConv == NULL) return 0; 
+    McfxConvData *pData = (McfxConvData*)(hMcfxConv);
+
+    //TODO: return 0 if mtxconv is NULL
+    if (minReached)
+        *minReached = (pData->num_xfd_convolvers <= 1 || pData->num_xfd_convolvers / 2 < 1);
+    if (maxReached)
+        *maxReached = (pData->num_xfd_convolvers >= MAX_NCONVOLVERS || pData->num_xfd_convolvers *2 > MAX_NCONVOLVERS);
+
+    // Maximum crossfade time in seconds is the bufferSize * pData->numConvolvers-1 divided by the sample rate
+    float maxCrossfadeTime = (float)(pData->_BufferSize * (pData->num_xfd_convolvers-1)) / (float)pData->_SampleRate;
+    return maxCrossfadeTime;
+}
+
+void mcfxConv_DoubleCrossfadeTime(void* const hMcfxConv, bool* maxReached)
+{
+    if (hMcfxConv == NULL) return;  // If the handle is invalid, return 0 as the number of skipped cycles
+    McfxConvData* pData = (McfxConvData*)(hMcfxConv);
+
+    if (pData->num_xfd_convolvers >= MAX_NCONVOLVERS || pData->num_xfd_convolvers *2 > MAX_NCONVOLVERS) {
+        *maxReached = true;
+        return; 
+    }
+    *maxReached = false;
+
+    pData->num_xfd_convolvers *= 2;
+    tvconv_reinitConvolver(hMcfxConv);
+}
+
+void mcfxConv_HalveCrossfadeTime(void* const hMcfxConv, bool* minReached)
+{
+    if (hMcfxConv == NULL) return;  // If the handle is invalid, return 0 as the number of skipped cycles
+    McfxConvData* pData = (McfxConvData*)(hMcfxConv);
+
+    if (pData->num_xfd_convolvers <= 1 || pData->num_xfd_convolvers / 2 < 1) {
+        *minReached = true;
+        return; 
+    }
+    *minReached = false;
+
+    pData->num_xfd_convolvers /= 2;
+    tvconv_reinitConvolver(hMcfxConv);
+}
+#endif

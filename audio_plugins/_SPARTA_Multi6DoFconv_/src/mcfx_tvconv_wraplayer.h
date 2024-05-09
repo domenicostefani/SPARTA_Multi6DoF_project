@@ -31,6 +31,14 @@
 #ifndef __MCFX_TVCONV_WRAPLAYER_H_INCLUDED__
 #define __MCFX_TVCONV_WRAPLAYER_H_INCLUDED__
 
+#define PER_POS_CONVOLVER_MODE 0
+#define SINGLE_CONVOLVER_MODE 1
+#define CROSSFADED_CONVOLVERS_MODE 2
+
+#define MCFX_CONVOLVER_MODE SINGLE_CONVOLVER_MODE
+
+
+
 #include "_common.h"
 #include "md_malloc.h"      //TODO: see whether to better integrate this with SAF
 #include "saf_utilities.h"  //TODO: see whether to better integrate this with SAF
@@ -250,6 +258,11 @@ void mcfxConv_setConvBufferSize(void* const hMcfxConv, unsigned int convBufferSi
 /** Set the Maximum partition size (non uniform conv partitioning) of the MCFX convolver engine*/
 void mcfxConv_setMaxPartitionSize(void* const hMcfxConv, unsigned int maxPartitionSize);
 
+#if MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE //[ds 2024]
+    float mcfxConv_getMaxCrossfadeTimeS(void* const hMcfxConv, bool* minReached=NULL, bool* maxReached=NULL);
+    void mcfxConv_DoubleCrossfadeTime(void* const hMcfxConv, bool* maxReached);
+    void mcfxConv_HalveCrossfadeTime(void* const hMcfxConv, bool* minReached);
+#endif
 
 
 #ifdef __cplusplus

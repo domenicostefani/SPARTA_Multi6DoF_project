@@ -168,8 +168,8 @@ struct SPARTALookAndFeel    : public LookAndFeel_V4
                            float sliderPos, float minSliderPos, float maxSliderPos,
                            const Slider::SliderStyle style, Slider& slider) override
     {
-        //g.fillAll (slider.findColour (Slider::backgroundColourId));
-        g.fillAll (Colour::fromRGBA(0.0f,0.0f,0.0f,0.0f));
+        g.fillAll (slider.findColour (Slider::backgroundColourId));
+        // g.fillAll (Colour::fromRGBA(0.0f,0.0f,0.0f,0.0f));
 
         if (style == Slider::LinearBar || style == Slider::LinearBarVertical)
         {

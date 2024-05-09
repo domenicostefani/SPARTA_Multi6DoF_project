@@ -264,9 +264,20 @@ private:
 
     void SetBufsize ( int inbufsize, int outbufsize, int blocksize );
 
+    /**
+     * @brief 
+     * 
+     * @param in 
+     * @param out 
+     * @param data 
+     * @param alloc // if true, memory will be allocated, like when first adding a filter, if false, memory will be replaceped, like when switching filters in real-time
+     * @return true 
+     * @return false 
+     */
     bool AddFilter ( int in,
                      int out,
-                     const AudioSampleBuffer& data);
+                     const AudioSampleBuffer& data, 
+                     bool alloc = true);
 
     int CheckInNode (int in, bool create); // return InNode ID if found, otherwise returns id of newly created or -1 if not available
     int CheckOutNode (int out, bool create); // return OutNode ID if found, otherwise returns id of newly created or -1 if not available
@@ -364,6 +375,12 @@ public:
     bool AddFilter ( int in,
                      int out,
                      const AudioSampleBuffer& data );
+    
+    // Replace the Impulse Response with dedicated Input/Output assignement, without reallocation (used for real-time matrix switching)
+    bool ReplaceFilter ( int in,
+                      int out,
+                      const AudioSampleBuffer& data );
+    
 
     // Start the Processing
     void StartProc();

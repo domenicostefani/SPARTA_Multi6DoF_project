@@ -463,6 +463,8 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         float* pFrameData[MAX_NUM_CHANNELS];
         int frameSize = rotator_getFrameSize();
 
+        // BEWARE: If the next check fails (e.g. Windows decides to set your buffer size to 160 samples instead of 128), plugin output will be mute if rotation is enabled, and full of artifacts if disabled.
+        // TODO: Add a warning for users to set the buffer size to a multiple of the frame size.
         if ((nCurrentBlockSize % frameSize == 0)) { /* divisible by frame size */
             for (int frame = 0; frame < nCurrentBlockSize / frameSize; frame++) {
                 for (int ch = 0; ch < buffer.getNumChannels(); ch++)
@@ -473,7 +475,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
             }
         }
         else
-            buffer.clear();
+            buffer.clear(); // TODO: Add a warning for users to set the buffer size to a multiple of the frame size.
     }
 
 }

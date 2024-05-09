@@ -347,6 +347,18 @@ bool MtxConvMaster::AddFilter(int in, int out, const juce::AudioSampleBuffer &da
     return true;
 }
 
+// Replace the Impulse Response with dedicated Input/Output assignement, without reallocation (used for real-time matrix switching)
+bool MtxConvMaster::ReplaceFilter ( int in, int out, const AudioSampleBuffer& data )
+{
+    // We call AddFilter with alloc = false to get the FilterNode that we want to replace
+    for (int i = 0; i < partitions_.size(); i++) {
+        partitions_.getUnchecked(i)->AddFilter(in, out, data, false); // alloc = false
+    }
+
+    return true;
+}
+
+
 void MtxConvMaster::DebugInfo()
 {
 	String dbg_text;
@@ -552,7 +564,7 @@ void MtxConvSlave::Reset()
     skip_cycles_.set(0);
 }
 
-bool MtxConvSlave::AddFilter(int in, int out, const juce::AudioSampleBuffer &data)
+bool MtxConvSlave::AddFilter(int in, int out, const juce::AudioSampleBuffer &data, bool alloc)
 {
 
     // this is the number of samples we use from the filter....
@@ -560,30 +572,53 @@ bool MtxConvSlave::AddFilter(int in, int out, const juce::AudioSampleBuffer &dat
 
     if (num_samples > 0)
     {
-        // check if the filter is zero -> if so: don't add it and save cpu time (for spare matrices maybe useful..)
-        if (data.getRMSLevel(0, offset_, num_samples) == 0.f)
+        // Skip filter allocation if RMS of IR is -, BUT ONLY IF NOT ALLOCATING A NEW FILTER
+        // In that case we want to avoid to incur in future issue when trying to replace a filter
+        // That might have been skipped in the past because the first IR matrix used had a zero RMS entry
+        if (!alloc && data.getRMSLevel(0, offset_, num_samples) == 0.f)// check if the filter is zero -> if so: don't add it and save cpu time (for spare matrices maybe useful..)
             return false;
+        
 
 
         // check if we already have an input node
-        InNode *innode = innodes_.getUnchecked( CheckInNode(in, true) );
+        int checkInNodeRes = CheckInNode(in, alloc);
+        if (checkInNodeRes == -1)
+            throw std::runtime_error("MtxConvSlave::AddFilter: Tried to swap a filter but Input node"+std::to_string(in)+" was never allocated"); // TODO: replace with non fatal error
+        InNode *innode = innodes_.getUnchecked(checkInNodeRes );   // Pass alloc as the "create" argument
 
         // check if we already have an output node
-        OutNode *outnode = outnodes_.getUnchecked( CheckOutNode(out, true) );
+        int checkOutNodeRes = CheckOutNode(out, alloc);
+        if (checkOutNodeRes == -1)
+            throw std::runtime_error("MtxConvSlave::AddFilter: Tried to swap a filter but Output node"+std::to_string(out)+" was never allocated"); // TODO: replace with non fatal error
+        OutNode *outnode = outnodes_.getUnchecked(checkOutNodeRes );  // Pass alloc as the "create" argument
 
 
         // this is <= the number of partitions
         int filter_parts = jmin(numpartitions_, (int)ceilf((float)num_samples/(float)partitionsize_));
 
+        FilterNode *filternode = nullptr;
+        if (alloc){ // [ds] This is a mod added on top of MCFX to allow for real-time matrix switching
+            // add a new filter with the necessary partitions
+            filternodes_.add(new FilterNode(innode, filter_parts, partitionsize_));
+            filternode = filternodes_.getLast(); // the new filternode
+            // add filter to the list in specific output node
+            outnode->filternodes_.add(filternode);
+        } else {
+            // Get the filter node that we want to replace
+            for (int i = 0; i < filternodes_.size(); i++) {
+                FilterNode *candidate = filternodes_.getUnchecked(i);
+                if (candidate->innode_->in_ == in && outnode->filternodes_.contains(candidate)) {
+                    if (candidate->numpartitions_ == filter_parts) {
+                        filternode = candidate;
+                        break;
+                    } else {
+                        throw std::runtime_error("MtxConvSlave::AddFilter: Trying to use a filter with number of partitions == " + std::to_string(filter_parts) + " that was allocated with " + std::to_string(filternodes_.getUnchecked(i)->numpartitions_) + " partitions");  // TODO: replace with non fatal error
+                    }
+                }
+            }
+        }
 
-        // add a new filter with the necessary partitions
-        filternodes_.add(new FilterNode(innode, filter_parts, partitionsize_));
 
-        FilterNode *filternode = filternodes_.getLast(); // the new filternode
-
-
-        // add filter to the list in specific output node
-        outnode->filternodes_.add(filternode);
 
         // iterate over all subpartitions
         for (int i=0; i < filter_parts; i++)
@@ -638,6 +673,7 @@ bool MtxConvSlave::AddFilter(int in, int out, const juce::AudioSampleBuffer &dat
         return false;
 
 }
+
 
 // thread function - do the background tasks
 void MtxConvSlave::run()
@@ -1192,6 +1228,7 @@ int MtxConvSlave::CheckOutNode(int out, bool create)
 
     return ret;
 }
+
 
 void MtxConvSlave::DebugInfo()
 {

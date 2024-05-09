@@ -34,6 +34,8 @@ typedef enum _SPARTA_WARNINGS{
     k_warning_nOutputs_more_than_64
 
 }SPARTA_WARNINGS;
+
+#define BEYOND_SAFE_CROSSFADE_FACTOR 10.0f
 //[/Headers]
 
 
@@ -88,6 +90,9 @@ private:
     void* hRot;
     void timerCallback() override;
     bool partitionComboboxesSet = false;
+
+    float maximumSafeCrossfadeMS = 0;
+    void updateCrossfadeRange();
 
     /* Look and Feel */
     SPARTALookAndFeel LAF;
@@ -176,7 +181,6 @@ private:
     std::unique_ptr<juce::Slider> SL_receiver_x;
     std::unique_ptr<juce::Slider> SL_receiver_y;
     std::unique_ptr<juce::Slider> SL_receiver_z;
-    std::unique_ptr<juce::Label> label_receiverIdx;
     std::unique_ptr<juce::TextEditor> te_oscport;
     std::unique_ptr<juce::ComboBox> CBviewMode;
     std::unique_ptr<juce::Slider> s_yaw;
@@ -190,6 +194,10 @@ private:
     std::unique_ptr<juce::Label> label_NIRs;
     std::unique_ptr<juce::ComboBox> box_first_part;
     std::unique_ptr<juce::ComboBox> box_maxpart;
+    std::unique_ptr<juce::Label> label_receiverIdx;
+    std::unique_ptr<juce::Slider> SL_crossfadeTimeMs;
+    std::unique_ptr<juce::TextButton> btn_doubleCrossfade;
+    std::unique_ptr<juce::TextButton> btn_halveCrossfade;
 
 
     //==============================================================================

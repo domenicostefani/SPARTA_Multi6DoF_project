@@ -112,66 +112,60 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     SL_source_y->setRange (0, 1, 0.001);
     SL_source_y->setSliderStyle (juce::Slider::LinearBarVertical);
     SL_source_y->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
+    SL_source_y->setColour (juce::Slider::backgroundColourId, juce::Colour (0xff273238));
     SL_source_y->addListener (this);
 
-    SL_source_y->setBounds (200, 233, 48, 20);
+    SL_source_y->setBounds (150, 233, 48, 20);
 
     SL_source_z.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_source_z.get());
     SL_source_z->setRange (0, 1, 0.001);
     SL_source_z->setSliderStyle (juce::Slider::LinearBarVertical);
     SL_source_z->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
+    SL_source_z->setColour (juce::Slider::backgroundColourId, juce::Colour (0xff273238));
     SL_source_z->addListener (this);
 
-    SL_source_z->setBounds (256, 233, 48, 20);
+    SL_source_z->setBounds (206, 233, 48, 20);
 
     SL_source_x.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_source_x.get());
     SL_source_x->setRange (0, 1, 0.001);
     SL_source_x->setSliderStyle (juce::Slider::LinearBarVertical);
     SL_source_x->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
+    SL_source_x->setColour (juce::Slider::backgroundColourId, juce::Colour (0xff273238));
     SL_source_x->addListener (this);
 
-    SL_source_x->setBounds (144, 233, 48, 20);
+    SL_source_x->setBounds (94, 233, 48, 20);
 
     SL_receiver_x.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_receiver_x.get());
     SL_receiver_x->setRange (0, 1, 0.001);
     SL_receiver_x->setSliderStyle (juce::Slider::LinearBarVertical);
     SL_receiver_x->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
+    SL_receiver_x->setColour (juce::Slider::backgroundColourId, juce::Colour (0xff273238));
     SL_receiver_x->addListener (this);
 
-    SL_receiver_x->setBounds (144, 302, 48, 20);
+    SL_receiver_x->setBounds (94, 302, 48, 20);
 
     SL_receiver_y.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_receiver_y.get());
     SL_receiver_y->setRange (0, 1, 0.001);
     SL_receiver_y->setSliderStyle (juce::Slider::LinearBarVertical);
     SL_receiver_y->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
+    SL_receiver_y->setColour (juce::Slider::backgroundColourId, juce::Colour (0xff273238));
     SL_receiver_y->addListener (this);
 
-    SL_receiver_y->setBounds (200, 302, 48, 20);
+    SL_receiver_y->setBounds (150, 302, 48, 20);
 
     SL_receiver_z.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (SL_receiver_z.get());
     SL_receiver_z->setRange (0, 1, 0.001);
     SL_receiver_z->setSliderStyle (juce::Slider::LinearBarVertical);
     SL_receiver_z->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
+    SL_receiver_z->setColour (juce::Slider::backgroundColourId, juce::Colour (0xff273238));
     SL_receiver_z->addListener (this);
 
-    SL_receiver_z->setBounds (256, 302, 48, 20);
-
-    label_receiverIdx.reset (new juce::Label ("new label",
-                                              juce::String()));
-    addAndMakeVisible (label_receiverIdx.get());
-    label_receiverIdx->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
-    label_receiverIdx->setJustificationType (juce::Justification::centredLeft);
-    label_receiverIdx->setEditable (false, false, false);
-    label_receiverIdx->setColour (juce::Label::outlineColourId, juce::Colour (0x68a3a2a2));
-    label_receiverIdx->setColour (juce::TextEditor::textColourId, juce::Colours::black);
-    label_receiverIdx->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
-
-    label_receiverIdx->setBounds (144, 326, 48, 20);
+    SL_receiver_z->setBounds (206, 302, 48, 20);
 
     te_oscport.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (te_oscport.get());
@@ -187,7 +181,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     te_oscport->setColour (juce::TextEditor::outlineColourId, juce::Colour (0x6c838080));
     te_oscport->setText (TRANS("9000"));
 
-    te_oscport->setBounds (344, 314, 42, 22);
+    te_oscport->setBounds (344, 302, 42, 20);
 
     CBviewMode.reset (new juce::ComboBox ("new combo box"));
     addAndMakeVisible (CBviewMode.get());
@@ -312,15 +306,64 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     box_maxpart->setBounds (334, 185, 60, 20);
 
+    label_receiverIdx.reset (new juce::Label ("new label",
+                                              juce::String()));
+    addAndMakeVisible (label_receiverIdx.get());
+    label_receiverIdx->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
+    label_receiverIdx->setJustificationType (juce::Justification::centredLeft);
+    label_receiverIdx->setEditable (false, false, false);
+    label_receiverIdx->setColour (juce::Label::outlineColourId, juce::Colour (0x68a3a2a2));
+    label_receiverIdx->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    label_receiverIdx->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    label_receiverIdx->setBounds (270, 302, 48, 20);
+
+    SL_crossfadeTimeMs.reset (new juce::Slider ("new slider"));
+    addAndMakeVisible (SL_crossfadeTimeMs.get());
+    SL_crossfadeTimeMs->setRange (0, 1, 1);
+    SL_crossfadeTimeMs->setSliderStyle (juce::Slider::LinearBar);
+    SL_crossfadeTimeMs->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
+    SL_crossfadeTimeMs->addListener (this);
+
+    SL_crossfadeTimeMs->setBounds (172, 334, 168, 20);
+
+    btn_doubleCrossfade.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btn_doubleCrossfade.get());
+    btn_doubleCrossfade->setTooltip (TRANS("Double the maximum cossfade time at the cost of CPU usage."));
+    btn_doubleCrossfade->setButtonText (TRANS("x2"));
+    btn_doubleCrossfade->addListener (this);
+    btn_doubleCrossfade->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff536c6d));
+    btn_doubleCrossfade->setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xff385152));
+
+    btn_doubleCrossfade->setBounds (343, 334, 26, 20);
+
+    btn_halveCrossfade.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btn_halveCrossfade.get());
+    btn_halveCrossfade->setTooltip (TRANS("Halve the maximum cossfade time to save CPU usage."));
+    btn_halveCrossfade->setButtonText (juce::CharPointer_UTF8 ("\xc3\xb7""2"));
+    btn_halveCrossfade->addListener (this);
+    btn_halveCrossfade->setColour (juce::TextButton::buttonColourId, juce::Colour (0xff536c6d));
+
+    btn_halveCrossfade->setBounds (371, 334, 26, 20);
+
 
     //[UserPreSize]
     box_maxpart->setColour(ComboBox::textColourId, Colours::darkgrey);
+    te_oscport->setJustification(juce::Justification::centred);
     //[/UserPreSize]
 
     setSize (860, 500);
 
 
     //[Constructor] You can add your own custom stuff here..
+
+    #if MCFX_CONVOLVER_MODE != CROSSFADED_CONVOLVERS_MODE
+        SL_crossfadeTimeMs->setVisible(false);
+        btn_doubleCrossfade->setVisible(false);
+        btn_halveCrossfade->setVisible(false);
+    #endif
+
+
 	hVst = ownerFilter;
     hTVC = hVst->getFXHandle();
     hRot = hVst->getFXHandle_rot();
@@ -444,7 +487,6 @@ PluginEditor::~PluginEditor()
     SL_receiver_x = nullptr;
     SL_receiver_y = nullptr;
     SL_receiver_z = nullptr;
-    label_receiverIdx = nullptr;
     te_oscport = nullptr;
     CBviewMode = nullptr;
     s_yaw = nullptr;
@@ -458,6 +500,10 @@ PluginEditor::~PluginEditor()
     label_NIRs = nullptr;
     box_first_part = nullptr;
     box_maxpart = nullptr;
+    label_receiverIdx = nullptr;
+    SL_crossfadeTimeMs = nullptr;
+    btn_doubleCrossfade = nullptr;
+    btn_halveCrossfade = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -505,7 +551,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 10, y = 278, width = 390, height = 74;
+        int x = 10, y = 278, width = 390, height = 48;
         juce::Colour fillColour = juce::Colour (0x10c7c7c7);
         juce::Colour strokeColour = juce::Colour (0x67a0a0a0);
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -544,7 +590,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 329, y = 278, width = 71, height = 74;
+        int x = 329, y = 278, width = 71, height = 48;
         juce::Colour fillColour = juce::Colour (0x10c7c7c7);
         juce::Colour strokeColour = juce::Colour (0x67a0a0a0);
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -811,31 +857,31 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 18, y = 233, width = 121, height = 20;
-        juce::String text (TRANS("Source Position:"));
+        int x = 18, y = 233, width = 70, height = 20;
+        juce::String text (TRANS("Position:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
         g.setColour (fillColour);
         g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
         g.drawText (text, x, y, width, height,
-                    juce::Justification::centredLeft, true);
+                    juce::Justification::centred, true);
     }
 
     {
-        int x = 18, y = 302, width = 142, height = 20;
-        juce::String text (TRANS("Target Position:"));
+        int x = 18, y = 302, width = 70, height = 20;
+        juce::String text (TRANS("Position:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
         g.setColour (fillColour);
         g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
         g.drawText (text, x, y, width, height,
-                    juce::Justification::centredLeft, true);
+                    juce::Justification::centred, true);
     }
 
     {
-        int x = 143, y = 279, width = 160, height = 20;
+        int x = 94, y = 279, width = 160, height = 20;
         juce::String text (TRANS("x           y           z"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -847,25 +893,13 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 18, y = 326, width = 142, height = 20;
-        juce::String text (TRANS("Target Index:"));
-        juce::Colour fillColour = juce::Colours::white;
-        //[UserPaintCustomArguments] Customize the painting arguments here..
-        //[/UserPaintCustomArguments]
-        g.setColour (fillColour);
-        g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
-        g.drawText (text, x, y, width, height,
-                    juce::Justification::centredLeft, true);
-    }
-
-    {
-        int x = 329, y = 289, width = 71, height = 33;
+        int x = 329, y = 279, width = 71, height = 20;
         juce::String text (TRANS("OSC Port"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
         g.setColour (fillColour);
-        g.setFont (juce::Font (11.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
+        g.setFont (juce::Font (14.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
         g.drawText (text, x, y, width, height,
                     juce::Justification::centred, true);
     }
@@ -991,7 +1025,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 50, y = 349, width = 310, height = 31;
+        int x = 50, y = 358, width = 310, height = 16;
         juce::String text (TRANS("Ambisonic Sound-Field Rotation [degrees]"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -1100,7 +1134,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 142, y = 212, width = 160, height = 20;
+        int x = 94, y = 212, width = 160, height = 20;
         juce::String text (TRANS("x           y           z"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -1111,7 +1145,94 @@ void PluginEditor::paint (juce::Graphics& g)
                     juce::Justification::centred, true);
     }
 
+    {
+        int x = 18, y = 282, width = 70, height = 20;
+        juce::String text (TRANS("Target"));
+        juce::Colour fillColour = juce::Colours::white;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
+        g.drawText (text, x, y, width, height,
+                    juce::Justification::centred, true);
+    }
+
+    {
+        int x = 18, y = 213, width = 70, height = 20;
+        juce::String text (TRANS("Source"));
+        juce::Colour fillColour = juce::Colours::white;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
+        g.drawText (text, x, y, width, height,
+                    juce::Justification::centred, true);
+    }
+
+    {
+        int x = 259, y = 278, width = 71, height = 48;
+        juce::Colour fillColour = juce::Colour (0x10c7c7c7);
+        juce::Colour strokeColour = juce::Colour (0x67a0a0a0);
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.fillRect (x, y, width, height);
+        g.setColour (strokeColour);
+        g.drawRect (x, y, width, height, 1);
+
+    }
+
+    {
+        int x = 270, y = 279, width = 48, height = 20;
+        juce::String text (TRANS("Index"));
+        juce::Colour fillColour = juce::Colours::white;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.setFont (juce::Font (14.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
+        g.drawText (text, x, y, width, height,
+                    juce::Justification::centred, true);
+    }
+
+    {
+        int x = 10, y = 331, width = 390, height = 26;
+        juce::Colour fillColour = juce::Colour (0x10c7c7c7);
+        juce::Colour strokeColour = juce::Colour (0x67a0a0a0);
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.fillRect (x, y, width, height);
+        g.setColour (strokeColour);
+        g.drawRect (x, y, width, height, 1);
+
+    }
+
+    {
+        int x = 18, y = 331, width = 150, height = 26;
+        juce::String text (TRANS("Crossfade Time [ms]:"));
+        juce::Colour fillColour = juce::Colours::white;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        #if MCFX_CONVOLVER_MODE != CROSSFADED_CONVOLVERS_MODE
+            text = "";
+        #endif
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
+        g.drawText (text, x, y, width, height,
+                    juce::Justification::centred, true);
+    }
+
     //[UserPaint] Add your own custom painting code here..
+
+    #if MCFX_CONVOLVER_MODE != CROSSFADED_CONVOLVERS_MODE
+        int x = 18, y = 331, width = 300, height = 26;
+        juce::String text (TRANS("Crossfade Disabled during build"));
+        juce::Colour fillColour = juce::Colours::darkred;
+        g.setColour (fillColour);
+        g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
+        g.drawText (text, x, y, width, height,
+                    juce::Justification::centredLeft, true);
+    #endif
 
     /* display version/date built */
 	g.setColour(Colours::white);
@@ -1264,6 +1385,18 @@ void PluginEditor::sliderValueChanged (juce::Slider* sliderThatWasMoved)
         rotator_setRoll(hRot, (float)s_roll->getValue());
         //[/UserSliderCode_s_roll]
     }
+    else if (sliderThatWasMoved == SL_crossfadeTimeMs.get())
+    {
+        //[UserSliderCode_SL_crossfadeTimeMs] -- add your slider handling code here..
+
+        // Turn red if the value is over 10
+        if (SL_crossfadeTimeMs->getValue() > maximumSafeCrossfadeMS)
+            SL_crossfadeTimeMs->setColour(Slider::backgroundColourId, Colours::red);
+        else
+            SL_crossfadeTimeMs->setColour(Slider::backgroundColourId, Colours::black);
+
+        //[/UserSliderCode_SL_crossfadeTimeMs]
+    }
 
     //[UsersliderValueChanged_Post]
     //[/UsersliderValueChanged_Post]
@@ -1331,6 +1464,40 @@ void PluginEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         hVst->setEnableRotation(TBenableRotation->getToggleState());
         //[/UserButtonCode_TBenableRotation]
     }
+    else if (buttonThatWasClicked == btn_doubleCrossfade.get())
+    {
+        //[UserButtonCode_btn_doubleCrossfade] -- add your button handler code here..
+       #if MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE
+       #elif MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+       #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+        bool maxReached;
+        mcfxConv_DoubleCrossfadeTime(hTVC, &maxReached);
+        if (maxReached)
+            btn_doubleCrossfade->setEnabled(false);
+        // Update the slider
+        updateCrossfadeRange();
+       #else
+        #error "Invalid MCFX_CONVOLVER_MODE"
+       #endif
+        //[/UserButtonCode_btn_doubleCrossfade]
+    }
+    else if (buttonThatWasClicked == btn_halveCrossfade.get())
+    {
+        //[UserButtonCode_btn_halveCrossfade] -- add your button handler code here..
+       #if MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE
+       #elif MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+       #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+        bool minReached;
+        mcfxConv_HalveCrossfadeTime(hTVC, &minReached);
+        if (minReached)
+            btn_halveCrossfade->setEnabled(false);
+        // Update the slider
+        updateCrossfadeRange();
+       #else
+        #error "Invalid MCFX_CONVOLVER_MODE"
+       #endif
+        //[/UserButtonCode_btn_halveCrossfade]
+    }
 
     //[UserbuttonClicked_Post]
     //[/UserbuttonClicked_Post]
@@ -1355,6 +1522,11 @@ void PluginEditor::timerCallback()
 
     // if (label_NInputs->getText().getIntValue() > 0 && !partitionComboboxesSet) // TODO: remove
     setPartComboboxes();
+
+    // Update Crossfade Time slider
+    updateCrossfadeRange();
+
+
 
     label_filterfs->setText(String(tvconv_getResampledIR(hTVC)?"*":"")+String(tvconv_getIRFs(hTVC)), dontSendNotification);
     if (tvconv_getResampledIR(hTVC))
@@ -1410,6 +1582,28 @@ void PluginEditor::timerCallback()
     /* check if OSC port has changed */
     if (hVst->getOscPortID() != te_oscport->getText().getIntValue())
         hVst->setOscPortID(te_oscport->getText().getIntValue());
+}
+
+void PluginEditor::updateCrossfadeRange() {
+    bool minReached = false, maxReached = false;
+   #if MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE
+    float maxtimeS = 0;
+   #elif MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE
+    float maxtimeS = 0;
+   #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+    float maxtimeS = mcfxConv_getMaxCrossfadeTimeS(hTVC, &minReached, &maxReached);
+   #else
+    #error "Invalid MCFX_CONVOLVER_MODE"
+   #endif
+    maximumSafeCrossfadeMS = maxtimeS * 1000.0;
+
+    SL_crossfadeTimeMs->setRange(0,
+                                 maximumSafeCrossfadeMS * BEYOND_SAFE_CROSSFADE_FACTOR,
+                                 0.1);
+    if (!maxReached)
+            btn_doubleCrossfade->setEnabled(true);
+    if (!minReached)
+            btn_halveCrossfade->setEnabled(true);
 }
 
 void PluginEditor::refreshCoords()
@@ -1510,7 +1704,7 @@ void PluginEditor::setPartComboboxes() {
             val = (unsigned int)floor(conv_buf * pow(2, i));
             if (val < conv_buf) continue;
             box_maxpart->addItem(String(val), i + 1);
-            if (val == max_part_size) 
+            if (val == max_part_size)
                 sel = i;
         }
         box_maxpart->setSelectedItemIndex(sel, dontSendNotification);
@@ -1547,13 +1741,13 @@ BEGIN_JUCER_METADATA
           hasStroke="0"/>
     <RECT pos="0 316 860 186" fill="linear: 8 496, 8 416, 0=ff19313f, 1=ff041518"
           hasStroke="0"/>
-    <RECT pos="10 278 390 74" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
+    <RECT pos="10 278 390 48" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
           strokeColour="solid: 67a0a0a0"/>
     <RECT pos="10 213 390 44" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
           strokeColour="solid: 67a0a0a0"/>
     <RECT pos="10 375 174 116" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
           strokeColour="solid: 67a0a0a0"/>
-    <RECT pos="329 278 71 74" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
+    <RECT pos="329 278 71 48" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
           strokeColour="solid: 67a0a0a0"/>
     <RECT pos="183 375 218 116" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
           strokeColour="solid: 67a0a0a0"/>
@@ -1609,20 +1803,17 @@ BEGIN_JUCER_METADATA
     <TEXT pos="71 253 270 31" fill="solid: ffffffff" hasStroke="0" text="Target Listener Position [m]"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="18 233 121 20" fill="solid: ffffffff" hasStroke="0" text="Source Position:"
-          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
-          italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="18 302 142 20" fill="solid: ffffffff" hasStroke="0" text="Target Position:"
-          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
-          italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="143 279 160 20" fill="solid: ffffffff" hasStroke="0" text="x           y           z"
+    <TEXT pos="18 233 70 20" fill="solid: ffffffff" hasStroke="0" text="Position:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="18 326 142 20" fill="solid: ffffffff" hasStroke="0" text="Target Index:"
+    <TEXT pos="18 302 70 20" fill="solid: ffffffff" hasStroke="0" text="Position:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
-          italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="329 289 71 33" fill="solid: ffffffff" hasStroke="0" text="OSC Port"
-          fontname="Default font" fontsize="11.0" kerning="0.0" bold="1"
+          italic="0" justification="36" typefaceStyle="Bold"/>
+    <TEXT pos="94 279 160 20" fill="solid: ffffffff" hasStroke="0" text="x           y           z"
+          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
+          italic="0" justification="36" typefaceStyle="Bold"/>
+    <TEXT pos="329 279 71 20" fill="solid: ffffffff" hasStroke="0" text="OSC Port"
+          fontname="Default font" fontsize="14.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
     <TEXT pos="221 374 49 30" fill="solid: ffffffff" hasStroke="0" text="/ypr[0]"
           fontname="Default font" fontsize="10.0" kerning="0.0" bold="0"
@@ -1654,7 +1845,7 @@ BEGIN_JUCER_METADATA
     <TEXT pos="20 375 160 30" fill="solid: ffffffff" hasStroke="0" text="Enable Rotation"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
-    <TEXT pos="50 349 310 31" fill="solid: ffffffff" hasStroke="0" text="Ambisonic Sound-Field Rotation [degrees]"
+    <TEXT pos="50 358 310 16" fill="solid: ffffffff" hasStroke="0" text="Ambisonic Sound-Field Rotation [degrees]"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
     <TEXT pos="18 423 160 30" fill="solid: ffffffff" hasStroke="0" text="(Note that this rotation is"
@@ -1680,7 +1871,23 @@ BEGIN_JUCER_METADATA
     <TEXT pos="203 185 130 20" fill="solid: ffffffff" hasStroke="0" text="Max Partition Size:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="142 212 160 20" fill="solid: ffffffff" hasStroke="0" text="x           y           z"
+    <TEXT pos="94 212 160 20" fill="solid: ffffffff" hasStroke="0" text="x           y           z"
+          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
+          italic="0" justification="36" typefaceStyle="Bold"/>
+    <TEXT pos="18 282 70 20" fill="solid: ffffffff" hasStroke="0" text="Target"
+          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
+          italic="0" justification="36" typefaceStyle="Bold"/>
+    <TEXT pos="18 213 70 20" fill="solid: ffffffff" hasStroke="0" text="Source"
+          fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
+          italic="0" justification="36" typefaceStyle="Bold"/>
+    <RECT pos="259 278 71 48" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
+          strokeColour="solid: 67a0a0a0"/>
+    <TEXT pos="270 279 48 20" fill="solid: ffffffff" hasStroke="0" text="Index"
+          fontname="Default font" fontsize="14.0" kerning="0.0" bold="1"
+          italic="0" justification="36" typefaceStyle="Bold"/>
+    <RECT pos="10 331 390 26" fill="solid: 10c7c7c7" hasStroke="1" stroke="1.1, mitered, butt"
+          strokeColour="solid: 67a0a0a0"/>
+    <TEXT pos="18 331 150 26" fill="solid: ffffffff" hasStroke="0" text="Crossfade Time [ms]:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
   </BACKGROUND>
@@ -1715,42 +1922,37 @@ BEGIN_JUCER_METADATA
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <SLIDER name="new slider" id="91838e1f378b04d5" memberName="SL_source_y"
-          virtualName="" explicitFocusOrder="0" pos="200 233 48 20" min="0.0"
-          max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
+          virtualName="" explicitFocusOrder="0" pos="150 233 48 20" bkgcol="ff273238"
+          min="0.0" max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <SLIDER name="new slider" id="4f9b7b9e0e5eb928" memberName="SL_source_z"
-          virtualName="" explicitFocusOrder="0" pos="256 233 48 20" min="0.0"
-          max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
+          virtualName="" explicitFocusOrder="0" pos="206 233 48 20" bkgcol="ff273238"
+          min="0.0" max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <SLIDER name="new slider" id="15013dd0f37db52c" memberName="SL_source_x"
-          virtualName="" explicitFocusOrder="0" pos="144 233 48 20" min="0.0"
-          max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
+          virtualName="" explicitFocusOrder="0" pos="94 233 48 20" bkgcol="ff273238"
+          min="0.0" max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <SLIDER name="new slider" id="572be8cab2789e9d" memberName="SL_receiver_x"
-          virtualName="" explicitFocusOrder="0" pos="144 302 48 20" min="0.0"
-          max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
+          virtualName="" explicitFocusOrder="0" pos="94 302 48 20" bkgcol="ff273238"
+          min="0.0" max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <SLIDER name="new slider" id="2c60d2500e81284e" memberName="SL_receiver_y"
-          virtualName="" explicitFocusOrder="0" pos="200 302 48 20" min="0.0"
-          max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
+          virtualName="" explicitFocusOrder="0" pos="150 302 48 20" bkgcol="ff273238"
+          min="0.0" max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <SLIDER name="new slider" id="a60197fb8a061339" memberName="SL_receiver_z"
-          virtualName="" explicitFocusOrder="0" pos="256 302 48 20" min="0.0"
-          max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
+          virtualName="" explicitFocusOrder="0" pos="206 302 48 20" bkgcol="ff273238"
+          min="0.0" max="1.0" int="0.001" style="LinearBarVertical" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
-  <LABEL name="new label" id="d173a8591e895adf" memberName="label_receiverIdx"
-         virtualName="" explicitFocusOrder="0" pos="144 326 48 20" outlineCol="68a3a2a2"
-         edTextCol="ff000000" edBkgCol="0" labelText="" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="1799da9e8cf495d6" memberName="te_oscport"
-              virtualName="" explicitFocusOrder="0" pos="344 314 42 22" tooltip="OSC addresses: /xyz [m]; /quat [-1,1]; /xyzquat [m][-1, 1]; /ypr [deg]; /xyzypr [m][deg]."
+              virtualName="" explicitFocusOrder="0" pos="344 302 42 20" tooltip="OSC addresses: /xyz [m]; /quat [-1,1]; /xyzquat [m][-1, 1]; /ypr [deg]; /xyzypr [m][deg]."
               textcol="ffffffff" bkgcol="ffffff" outlinecol="6c838080" initialText="9000"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="0" popupmenu="1"/>
@@ -1803,6 +2005,24 @@ BEGIN_JUCER_METADATA
   <COMBOBOX name="new combo box" id="71aef32e6b70fa85" memberName="box_maxpart"
             virtualName="" explicitFocusOrder="0" pos="334 185 60 20" tooltip="Set maximum partition size for CPU load optimizations, leave it at 8192 if you don't know what you are doing!"
             editable="0" layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
+  <LABEL name="new label" id="d173a8591e895adf" memberName="label_receiverIdx"
+         virtualName="" explicitFocusOrder="0" pos="270 302 48 20" outlineCol="68a3a2a2"
+         edTextCol="ff000000" edBkgCol="0" labelText="" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
+         fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
+  <SLIDER name="new slider" id="18f7e0456c0171a6" memberName="SL_crossfadeTimeMs"
+          virtualName="" explicitFocusOrder="0" pos="172 334 168 20" min="0.0"
+          max="1.0" int="1.0" style="LinearBar" textBoxPos="TextBoxRight"
+          textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
+          needsCallback="1"/>
+  <TEXTBUTTON name="new button" id="2529c790b2d25d1c" memberName="btn_doubleCrossfade"
+              virtualName="" explicitFocusOrder="0" pos="343 334 26 20" tooltip="Double the maximum cossfade time at the cost of CPU usage."
+              bgColOff="ff536c6d" bgColOn="ff385152" buttonText="x2" connectedEdges="0"
+              needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="dd8ccadbd0ae0905" memberName="btn_halveCrossfade"
+              virtualName="" explicitFocusOrder="0" pos="371 334 26 20" tooltip="Halve the maximum cossfade time to save CPU usage."
+              bgColOff="ff536c6d" buttonText="&#247;2" connectedEdges="0" needsCallback="1"
+              radioGroupId="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA
