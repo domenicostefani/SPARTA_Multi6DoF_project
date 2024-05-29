@@ -35,7 +35,9 @@ typedef enum _SPARTA_WARNINGS{
 
 }SPARTA_WARNINGS;
 
-#define BEYOND_SAFE_CROSSFADE_FACTOR 10.0f
+#define BEYOND_SAFE_CROSSFADE_FACTOR 5.0f
+#define SHOW_DEBUG_DATETIME
+
 //[/Headers]
 
 
@@ -96,6 +98,11 @@ private:
 
     /* Look and Feel */
     SPARTALookAndFeel LAF;
+
+    #if MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+        juce::Colour crossfadeSldBackground = juce::Colours::black.withAlpha(0.5f);
+        juce::Rectangle<int> crossfadeWarningArea;
+    #endif
 
     /** Custom Look and feel for small text comboboxes */
     class CustomLookAndFeel : public LookAndFeel_V4 {

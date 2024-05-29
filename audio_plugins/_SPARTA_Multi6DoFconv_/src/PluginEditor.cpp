@@ -323,6 +323,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     SL_crossfadeTimeMs->setRange (0, 1, 1);
     SL_crossfadeTimeMs->setSliderStyle (juce::Slider::LinearBar);
     SL_crossfadeTimeMs->setTextBoxStyle (juce::Slider::TextBoxRight, false, 55, 20);
+    SL_crossfadeTimeMs->setColour (juce::Slider::backgroundColourId, juce::Colour (0x2a263238));
     SL_crossfadeTimeMs->addListener (this);
 
     SL_crossfadeTimeMs->setBounds (172, 334, 168, 20);
@@ -686,7 +687,7 @@ void PluginEditor::paint (juce::Graphics& g)
 
     {
         int x = 92, y = 1, width = 148, height = 32;
-        juce::String text (TRANS("Multi6DoFconv"));
+        juce::String text (TRANS("MCFX-6DoFconv"));
         juce::Colour fillColour = juce::Colour (0xff8c00ff);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
@@ -698,7 +699,7 @@ void PluginEditor::paint (juce::Graphics& g)
 
     {
         int x = 240, y = 4, width = 450, height = 28;
-        juce::String text (TRANS("Multisource 6DoF Convolver with the MCFX convolution engine"));
+        juce::String text (TRANS("6DoF Convolver with the MCFX convolution engine"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
@@ -1222,7 +1223,35 @@ void PluginEditor::paint (juce::Graphics& g)
                     juce::Justification::centred, true);
     }
 
+    {
+        int x = 172, y = 334, width = 168, height = 20;
+        juce::Colour fillColour = juce::Colour (0x93ff0000);
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+       #if MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+        fillColour = crossfadeSldBackground;
+        
+        crossfadeWarningArea.setY(y);
+        crossfadeWarningArea.setHeight(height);
+
+        // Now a new int wa_x should be (width/BEYOND_SAFE_CROSSFADE_FACTOR)+x
+        // and a new int wa_w should be (width/BEYOND_SAFE_CROSSFADE_FACTOR) * (BEYOND_SAFE_CROSSFADE_FACTOR-1)
+        int wa_x = (width/BEYOND_SAFE_CROSSFADE_FACTOR)+x;
+        int wa_w = (width/BEYOND_SAFE_CROSSFADE_FACTOR) * (BEYOND_SAFE_CROSSFADE_FACTOR-1);
+
+        crossfadeWarningArea.setX(wa_x);
+        crossfadeWarningArea.setWidth(wa_w);
+        crossfadeWarningArea.removeFromTop(2);
+        crossfadeWarningArea.removeFromBottom(2);
+        crossfadeWarningArea.removeFromRight(1);
+       #endif
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.fillRect (x, y, width, height);
+    }
+
     //[UserPaint] Add your own custom painting code here..
+
+
 
     #if MCFX_CONVOLVER_MODE != CROSSFADED_CONVOLVERS_MODE
         int x = 18, y = 331, width = 300, height = 26;
@@ -1232,14 +1261,32 @@ void PluginEditor::paint (juce::Graphics& g)
         g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
         g.drawText (text, x, y, width, height,
                     juce::Justification::centredLeft, true);
+    #else
+        // Draw dashed lines around the warning area of the crossfade slider
+        g.setColour (juce::Colours::red);
+        int wa_x = crossfadeWarningArea.getX(),
+            wa_w = crossfadeWarningArea.getWidth(),
+            wa_y = crossfadeWarningArea.getY(),
+            wa_h = crossfadeWarningArea.getHeight();
+        float dashPattern[2]; dashPattern[0] = 5.0; dashPattern[1] = 5.0; // Pattern of length for dashed lines
+        g.drawDashedLine(juce::Line<float>(wa_x, wa_y, wa_x+wa_w, wa_y),dashPattern, 2, 2);
+        g.drawDashedLine(juce::Line<float>(wa_x, wa_y+wa_h, wa_x+wa_w, wa_y+wa_h),dashPattern, 2, 2);
+        g.drawDashedLine(juce::Line<float>(wa_x, wa_y, wa_x, wa_y+wa_h),dashPattern, 2, 2);
+        g.drawDashedLine(juce::Line<float>(wa_x+wa_w, wa_y, wa_x+wa_w, wa_y+wa_h),dashPattern, 2, 2);
     #endif
 
     /* display version/date built */
 	g.setColour(Colours::white);
 	g.setFont(Font(11.00f, Font::plain));
-	g.drawText(TRANS("Ver ") + JucePlugin_VersionString + BUILD_VER_SUFFIX + TRANS(", Build Date/Time ") + __DATE__ + TRANS(" ") + __TIME__ + TRANS(" "),
-		getBounds().getWidth()-250, 17, 530, 11,
-		Justification::centredLeft, true);
+    #if defined(SHOW_DEBUG_DATETIME)
+        g.drawText(TRANS("Ver ") + JucePlugin_VersionString + BUILD_VER_SUFFIX + TRANS(", Build Date/Time ") + __DATE__ + TRANS(" ") + __TIME__ + TRANS(" "),
+            getBounds().getWidth()-350, 17, 530, 11,
+            Justification::centredLeft, true);
+    #else
+        g.drawText(TRANS("Ver ") + JucePlugin_VersionString + BUILD_VER_SUFFIX + TRANS(", Build Date ") + __DATE__ + TRANS(" "),
+            200, 16, 530, 11,
+            Justification::centredLeft, true);
+    #endif
 
     /* display warning message */
     g.setColour(Colours::red);
@@ -1390,11 +1437,15 @@ void PluginEditor::sliderValueChanged (juce::Slider* sliderThatWasMoved)
         //[UserSliderCode_SL_crossfadeTimeMs] -- add your slider handling code here..
 
         // Turn red if the value is over 10
+       #if MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
         if (SL_crossfadeTimeMs->getValue() > maximumSafeCrossfadeMS)
-            SL_crossfadeTimeMs->setColour(Slider::backgroundColourId, Colours::red);
+            crossfadeSldBackground = Colours::red; //SL_crossfadeTimeMs->setColour(Slider::backgroundColourId, Colours::red);
         else
-            SL_crossfadeTimeMs->setColour(Slider::backgroundColourId, Colours::black);
+            crossfadeSldBackground = Colours::black; //SL_crossfadeTimeMs->setColour(Slider::backgroundColourId, Colours::black);
 
+
+        mcfxConv_setCrossfadeTime_ms(hTVC, SL_crossfadeTimeMs->getValue());
+       #endif
         //[/UserSliderCode_SL_crossfadeTimeMs]
     }
 
@@ -1476,6 +1527,7 @@ void PluginEditor::buttonClicked (juce::Button* buttonThatWasClicked)
             btn_doubleCrossfade->setEnabled(false);
         // Update the slider
         updateCrossfadeRange();
+        SL_crossfadeTimeMs->repaint();
        #else
         #error "Invalid MCFX_CONVOLVER_MODE"
        #endif
@@ -1493,6 +1545,7 @@ void PluginEditor::buttonClicked (juce::Button* buttonThatWasClicked)
             btn_halveCrossfade->setEnabled(false);
         // Update the slider
         updateCrossfadeRange();
+        SL_crossfadeTimeMs->repaint();
        #else
         #error "Invalid MCFX_CONVOLVER_MODE"
        #endif
@@ -1514,13 +1567,13 @@ void PluginEditor::timerCallback()
     s_roll->setValue(rotator_getRoll(hRot), dontSendNotification);
     label_hostBlockSize->setText(String(tvconv_getHostBlockSize(hTVC)), dontSendNotification);
     label_NInputs->setText(String(mcfxConv_getMinInCh(hTVC)), dontSendNotification);
+    SL_crossfadeTimeMs->setValue(mcfxConv_getCrossfadeTime_ms(hTVC), dontSendNotification);
     label_NOutputs->setText(String(mcfxConv_getMinOutCh(hTVC)), dontSendNotification);
     label_NIRs->setText(String(tvconv_getNumIRs(hTVC)), dontSendNotification);
     label_nIRpositions->setText(String(tvconv_getNumListenerPositions(hTVC)), dontSendNotification);
     label_filterLength->setText(String((float)tvconv_getIRLength(hTVC)/MAX((float)tvconv_getIRFs(hTVC),1/*avoid nan*/)), dontSendNotification);
     label_hostfs->setText(String(tvconv_getHostFs(hTVC)), dontSendNotification);
 
-    // if (label_NInputs->getText().getIntValue() > 0 && !partitionComboboxesSet) // TODO: remove
     setPartComboboxes();
 
     // Update Crossfade Time slider
@@ -1890,6 +1943,7 @@ BEGIN_JUCER_METADATA
     <TEXT pos="18 331 150 26" fill="solid: ffffffff" hasStroke="0" text="Crossfade Time [ms]:"
           fontname="Default font" fontsize="15.0" kerning="0.0" bold="1"
           italic="0" justification="36" typefaceStyle="Bold"/>
+    <RECT pos="172 334 168 20" fill="solid: 93ff0000" hasStroke="0"/>
   </BACKGROUND>
   <LABEL name="new label" id="167c5975ece5bfaa" memberName="label_hostBlockSize"
          virtualName="" explicitFocusOrder="0" pos="136 92 60 20" outlineCol="68a3a2a2"
@@ -2011,8 +2065,8 @@ BEGIN_JUCER_METADATA
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <SLIDER name="new slider" id="18f7e0456c0171a6" memberName="SL_crossfadeTimeMs"
-          virtualName="" explicitFocusOrder="0" pos="172 334 168 20" min="0.0"
-          max="1.0" int="1.0" style="LinearBar" textBoxPos="TextBoxRight"
+          virtualName="" explicitFocusOrder="0" pos="172 334 168 20" bkgcol="2a263238"
+          min="0.0" max="1.0" int="1.0" style="LinearBar" textBoxPos="TextBoxRight"
           textBoxEditable="1" textBoxWidth="55" textBoxHeight="20" skewFactor="1.0"
           needsCallback="1"/>
   <TEXTBUTTON name="new button" id="2529c790b2d25d1c" memberName="btn_doubleCrossfade"

@@ -35,9 +35,22 @@
 #define SINGLE_CONVOLVER_MODE 1
 #define CROSSFADED_CONVOLVERS_MODE 2
 
-#define MCFX_CONVOLVER_MODE SINGLE_CONVOLVER_MODE
+#define MCFX_CONVOLVER_MODE CROSSFADED_CONVOLVERS_MODE
+#define PRIMING // Used to fill the convolver buffers with coherend data before switching to it
+#define PRIMING_BUF_SIZE_BLOCKS 16 // This does something bad only if too small, but there is some other kind of discontinuity even when large
 
+// Next defines are here for debugging purposes
+#define DISABLE_FILTER_REPLACEMENT
+#define DISABLE_ENTIRELY_CONV_CHANGE_BUT_RESET
+// #define DISABLE_CONV_RESET
 
+#define CROSSFADE_DEBUG_MUTE 0
+#define CROSSFADE_DEBUG_DISABLE 1
+//---
+#define CROSSFADE CROSSFADE_DEBUG_MUTE
+// #define CROSSFADE CROSSFADE_DEBUG_DISABLE
+
+// #define TEST_PRIMING_BUFFER_STATE // This overwrites entire buffer with the priming buffer, to check if the priming buffer is correctly filled
 
 #include "_common.h"
 #include "md_malloc.h"      //TODO: see whether to better integrate this with SAF
@@ -262,6 +275,13 @@ void mcfxConv_setMaxPartitionSize(void* const hMcfxConv, unsigned int maxPartiti
     float mcfxConv_getMaxCrossfadeTimeS(void* const hMcfxConv, bool* minReached=NULL, bool* maxReached=NULL);
     void mcfxConv_DoubleCrossfadeTime(void* const hMcfxConv, bool* maxReached);
     void mcfxConv_HalveCrossfadeTime(void* const hMcfxConv, bool* minReached);
+
+    void mcfxConv_setCrossfadeTime_samples(void* const hMcfxConv, unsigned int crossfadeTime_samples);
+    void mcfxConv_setCrossfadeTime_s(void* const hMcfxConv, float crossfadeTime_s);
+    void mcfxConv_setCrossfadeTime_ms(void* const hMcfxConv, float crossfadeTime_ms);
+    float mcfxConv_getCrossfadeTime_s(void* const hMcfxConv);
+    float mcfxConv_getCrossfadeTime_ms(void* const hMcfxConv);
+    unsigned int mcfxConv_getCrossfadeTime_samples(void* const hMcfxConv);
 #endif
 
 
