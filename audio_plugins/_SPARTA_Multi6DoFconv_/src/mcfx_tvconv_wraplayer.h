@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Leo McCormack 
+ * Copyright 2020 Leo McCormack
  * Copyright 2024 Domenico Stefani
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -20,7 +20,6 @@
  * Domenico Stefani is responsible for adapting the code for the integration of the MCFX Convolver (by Matthias Kronlachner)
  */
 
-
 /**
  * @file mcfx_tvconv_wraplayer.h
  * @brief Wrapper/compatibility layer between the MCFX convolver and the tvconv API.
@@ -36,19 +35,19 @@
 #define CROSSFADED_CONVOLVERS_MODE 3
 
 #define MCFX_CONVOLVER_MODE CROSSFADED_CONVOLVERS_MODE
-#define PRIMING // Used to fill the convolver buffers with coherend data before switching to it
-#define PRIMING_BUF_SIZE_BLOCKS 8 // This does something bad only if too small, but there is some other kind of discontinuity even when large
-//TODO: determine priming buffer size with length of the longest IR PARETITION
+#define PRIMING                    // Used to fill the convolver buffers with coherend data before switching to it
+#define PRIMING_BUF_SIZE_BLOCKS 8  // This does something bad only if too small, but there is some other kind of discontinuity even when large
+// TODO: determine priming buffer size with length of the longest IR PARETITION
 
 // Next defines are here for debugging purposes
-// #define DISABLE_FILTER_REPLACEMENT // [FOR DEBUG] 
-// #define DISABLE_ENTIRELY_CONV_CHANGE_BUT_RESET // [FOR DEBUG] 
-// #define DISABLE_CONV_RESET // [FOR DEBUG] 
+// #define DISABLE_FILTER_REPLACEMENT // [FOR DEBUG]
+// #define DISABLE_ENTIRELY_CONV_CHANGE_BUT_RESET // [FOR DEBUG]
+// #define DISABLE_CONV_RESET // [FOR DEBUG]
 // #define ZEROS_AT_CHANGEBLOCK_END // [FOR DEBUG] Sets 4 samples at 0 at the end of priming blocks
 
 #define CROSSFADE_RELEASE 1
-#define CROSSFADE_DEBUG_MUTE 2 // [FOR DEBUG]
-#define CROSSFADE_DEBUG_DISABLE 3 // [FOR DEBUG]
+#define CROSSFADE_DEBUG_MUTE 2     // [FOR DEBUG]
+#define CROSSFADE_DEBUG_DISABLE 3  // [FOR DEBUG]
 //---
 #define CROSSFADE CROSSFADE_RELEASE
 // #define CROSSFADE CROSSFADE_DEBUG_MUTE // [FOR DEBUG]
@@ -64,13 +63,15 @@
 #include "md_malloc.h"      //TODO: see whether to better integrate this with SAF
 #include "saf_utilities.h"  //TODO: see whether to better integrate this with SAF
 #ifdef SAF_ENABLE_SOFA_READER_MODULE
-    #define SAF_SOFA_READER_MODULE//TODO: see whether to better integrate this with SAF// Or at least copy the licence comment from saf.h
-    #include "saf_sofa_reader.h"//TODO: see whether to better integrate this with SAF// Or at least copy the licence comment from saf.h
-#endif /* SAF_ENABLE_SOFA_READER_MODULE */
-#include <stddef.h>         //TODO: see wether to keep or move (this is for the definition of NULL)
+    #define SAF_SOFA_READER_MODULE  // TODO: see whether to better integrate this with SAF// Or at least copy the licence comment from saf.h
+    #include "saf_sofa_reader.h"    //TODO: see whether to better integrate this with SAF// Or at least copy the licence comment from saf.h
+#endif                              /* SAF_ENABLE_SOFA_READER_MODULE */
+#include <JuceHeader.h>
+#include <stddef.h>  //TODO: see wether to keep or move (this is for the definition of NULL)
+
 #include "MCFX_ConvolverData.h"
 #include "MCFX_MtxConv.h"
-#include <JuceHeader.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -94,7 +95,6 @@ typedef enum {
     SAF_TVCONV_SOFA_ERROR_NETCDF_IN_USE
 
 } SAF_TVCONV_ERROR_CODES;
-
 
 /* ========================================================================== */
 /*                               Main Functions                               */
@@ -125,34 +125,16 @@ void tvconv_init(void* const hMcfxConv,
                  int samplerate,
                  int hostBlockSize);
 
-/**
- * Performs the time-varying convolution processing
- *
- * @param[in] hMcfxConv McfxConv handle
- * @param[in] inputs    Input channel buffers; 2-D array: nInputs x nSamples
- * @param[in] outputs   Output channel buffers; 2-D array: nOutputs x nSamples
- * @param[in] nInputs   Number of input channels
- * @param[in] nOutputs  Number of output channels
- * @param[in] nSamples  Number of samples in 'inputs'/'output' matrices (block size)
- */
-void tvconv_process(void* const hMcfxConv,
-                    float* const* const inputs,
-                    float* const* const outputs,
-                    int nInputs,
-                    int nOutputs,
-                    int nSamples);
-
 void mcfxConv_process(void* const hMcfxConv,
-                    juce::AudioBuffer<float>& buffer,
-                    int nInputs,
-                    int nOutputs,
-                    bool isNonRealtime = true);
-
+                      juce::AudioBuffer<float>& buffer,
+                      int nInputs,
+                      int nOutputs,
+                      bool isNonRealtime = true);
 
 /* ========================================================================== */
 /*                                Set Functions                               */
 /* ========================================================================== */
-    
+
 /**
  * Sets all intialisation flags to 1. Re-initialising all settings/variables,
  * as McfxConv is currently configured, at next available opportunity.
@@ -182,7 +164,6 @@ void tvconv_reinitConvolver(void* const hMcfxConv);
  */
 void tvconv_setTargetPosition(void* const hMcfxConv, float position, int dim);
 
-
 /* ========================================================================== */
 /*                                Get Functions                               */
 /* ========================================================================== */
@@ -193,7 +174,6 @@ void tvconv_setTargetPosition(void* const hMcfxConv, float position, int dim);
  */
 int tvconv_getFrameSize(void);
 
-    
 /** Returns the number input channels */
 int tvconv_getNumInputChannels(void* const hMcfxConv);
 
@@ -272,27 +252,24 @@ unsigned int mcfxConv_getBufferSize(void* const hMcfxConv);
 /** Return the buffer size of the MCFX convolver engine for the current SOFA configuration */
 unsigned int mcfxConv_getConvBufferSize(void* const hMcfxConv);
 
-
-
 /** Set the buffer size of the MCFX convolver engine, which corresponds to the size of the first conv. partition in the non-uniform Conv. partitioning scheme*/
 void mcfxConv_setConvBufferSize(void* const hMcfxConv, unsigned int convBufferSize);
 
 /** Set the Maximum partition size (non uniform conv partitioning) of the MCFX convolver engine*/
 void mcfxConv_setMaxPartitionSize(void* const hMcfxConv, unsigned int maxPartitionSize);
 
-#if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE) //[ds 2024]
-    float mcfxConv_getMaxCrossfadeTimeS(void* const hMcfxConv, bool* minReached=NULL, bool* maxReached=NULL);
-    void mcfxConv_DoubleCrossfadeTime(void* const hMcfxConv, bool* maxReached);
-    void mcfxConv_HalveCrossfadeTime(void* const hMcfxConv, bool* minReached);
+#if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)  //[ds 2024]
+float mcfxConv_getMaxCrossfadeTimeS(void* const hMcfxConv, bool* minReached = NULL, bool* maxReached = NULL);
+void mcfxConv_DoubleCrossfadeTime(void* const hMcfxConv, bool* maxReached);
+void mcfxConv_HalveCrossfadeTime(void* const hMcfxConv, bool* minReached);
 
-    void mcfxConv_setCrossfadeTime_samples(void* const hMcfxConv, unsigned int crossfadeTime_samples);
-    void mcfxConv_setCrossfadeTime_s(void* const hMcfxConv, float crossfadeTime_s);
-    void mcfxConv_setCrossfadeTime_ms(void* const hMcfxConv, float crossfadeTime_ms);
-    float mcfxConv_getCrossfadeTime_s(void* const hMcfxConv);
-    float mcfxConv_getCrossfadeTime_ms(void* const hMcfxConv);
-    unsigned int mcfxConv_getCrossfadeTime_samples(void* const hMcfxConv);
+void mcfxConv_setCrossfadeTime_samples(void* const hMcfxConv, unsigned int crossfadeTime_samples);
+void mcfxConv_setCrossfadeTime_s(void* const hMcfxConv, float crossfadeTime_s);
+void mcfxConv_setCrossfadeTime_ms(void* const hMcfxConv, float crossfadeTime_ms);
+float mcfxConv_getCrossfadeTime_s(void* const hMcfxConv);
+float mcfxConv_getCrossfadeTime_ms(void* const hMcfxConv);
+unsigned int mcfxConv_getCrossfadeTime_samples(void* const hMcfxConv);
 #endif
-
 
 #ifdef __cplusplus
 } /* extern "C" { */
