@@ -99,7 +99,7 @@ private:
     /* Look and Feel */
     SPARTALookAndFeel LAF;
 
-    #if MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
+    #if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
         juce::Colour crossfadeSldBackground = juce::Colours::black.withAlpha(0.5f);
         juce::Rectangle<int> crossfadeWarningArea;
     #endif

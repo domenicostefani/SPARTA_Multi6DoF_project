@@ -31,9 +31,9 @@
 #ifndef __MCFX_TVCONV_WRAPLAYER_H_INCLUDED__
 #define __MCFX_TVCONV_WRAPLAYER_H_INCLUDED__
 
-#define PER_POS_CONVOLVER_MODE 0
-#define SINGLE_CONVOLVER_MODE 1
-#define CROSSFADED_CONVOLVERS_MODE 2
+#define PER_POS_CONVOLVER_MODE 1
+#define SINGLE_CONVOLVER_MODE 2
+#define CROSSFADED_CONVOLVERS_MODE 3
 
 #define MCFX_CONVOLVER_MODE CROSSFADED_CONVOLVERS_MODE
 #define PRIMING // Used to fill the convolver buffers with coherend data before switching to it
@@ -46,15 +46,19 @@
 // #define DISABLE_CONV_RESET // [FOR DEBUG] 
 // #define ZEROS_AT_CHANGEBLOCK_END // [FOR DEBUG] Sets 4 samples at 0 at the end of priming blocks
 
-#define CROSSFADE_RELEASE 0
-// #define CROSSFADE_DEBUG_MUTE 1 // [FOR DEBUG]
-// #define CROSSFADE_DEBUG_DISABLE 2 // [FOR DEBUG]
+#define CROSSFADE_RELEASE 1
+#define CROSSFADE_DEBUG_MUTE 2 // [FOR DEBUG]
+#define CROSSFADE_DEBUG_DISABLE 3 // [FOR DEBUG]
 //---
 #define CROSSFADE CROSSFADE_RELEASE
 // #define CROSSFADE CROSSFADE_DEBUG_MUTE // [FOR DEBUG]
 // #define CROSSFADE CROSSFADE_DEBUG_DISABLE // [FOR DEBUG]
 
 // #define TEST_PRIMING_BUFFER_STATE  // [FOR DEBUG] This overwrites entire buffer with the priming buffer, to check if the priming buffer is correctly filled
+
+#ifdef USE_ZITA_CONVOLVER
+    #error "Not implemented yet (This was in MCFX but has not been correctly ported here)"
+#endif
 
 #include "_common.h"
 #include "md_malloc.h"      //TODO: see whether to better integrate this with SAF
@@ -276,7 +280,7 @@ void mcfxConv_setConvBufferSize(void* const hMcfxConv, unsigned int convBufferSi
 /** Set the Maximum partition size (non uniform conv partitioning) of the MCFX convolver engine*/
 void mcfxConv_setMaxPartitionSize(void* const hMcfxConv, unsigned int maxPartitionSize);
 
-#if MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE //[ds 2024]
+#if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE) //[ds 2024]
     float mcfxConv_getMaxCrossfadeTimeS(void* const hMcfxConv, bool* minReached=NULL, bool* maxReached=NULL);
     void mcfxConv_DoubleCrossfadeTime(void* const hMcfxConv, bool* maxReached);
     void mcfxConv_HalveCrossfadeTime(void* const hMcfxConv, bool* minReached);
