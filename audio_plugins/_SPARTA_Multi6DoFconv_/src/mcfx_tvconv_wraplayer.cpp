@@ -211,7 +211,6 @@ void mcfxConv_create(
             float* curOutchanH = curPositionH + out_ch * length_h;
             for (int in_ch = 0; in_ch < nCHin; in_ch++) {
                 float* curSingleIR = curOutchanH;  // TODO: change this as soon as multipleSource support is added; use in_ch to address the correct IR
-                // std::cout << "Loading IR for -> posIdx: " << listenerPosition << " out_ch: " << out_ch << " in_ch: " << in_ch << std::endl; //TODO: remove
 
                 float* const* curSingleIRPtr = &curSingleIR;
                 AudioBuffer<float> TempAudioBuffer(curSingleIRPtr, 1, length_h);  // This replaced the following line from MCFX: AudioBuffer<float> TempAudioBuffer(1,256); AND the loading of the ir from wav file
@@ -344,7 +343,7 @@ void mcfxConv_create(
 
         for (int i=0; i < curConvData->getNumIRs(); i++)
         {
-            // if (threadShouldExit()) return; //TODO: remove thread stuff
+            // if (threadShouldExit()) return; //TODO: check what to do with thread stuff during load
             curMtxConv->AddFilter(curConvData->getInCh(i), curConvData->getOutCh(i), *curConvData->getIR(i));
             // no delay and length yet!
         }
@@ -603,11 +602,11 @@ void changeListenerPosition(void* phMCFXc, int newPos, int lastPos, unsigned int
 }
 
 void updateAges (juce::OwnedArray<CrossfadedConvInfo>* mtxconv_xfd_info_s, int numSamplesProcessed) {
+    // TODO: we may want to stop using ages
     for (int conv_idx = 0; conv_idx < mtxconv_xfd_info_s->size(); conv_idx++) {
         CrossfadedConvInfo* curXfdInfo = mtxconv_xfd_info_s->getUnchecked(conv_idx);
         if (curXfdInfo->isProcessing) {
             curXfdInfo->age += numSamplesProcessed;
-            // std::cout << "Processor " << std::to_string(conv_idx) << " has posidx: " << curXfdInfo->pos_idx << ", age: " << curXfdInfo->age << " and gain " << curXfdInfo->gain.getCurrentValue() << (curXfdInfo->gain.isSmoothing()?" and is Smoothing with target"+std::to_string(curXfdInfo->gain.getTargetValue()):"") << std::endl << std::flush; //TODO: remove
         }
 
         
@@ -825,16 +824,6 @@ void mcfxConv_replaceConvData(void* const hMcfxConv, int newListenerPos) {
     if (pData->hMCFXConv == NULL) return;
     Internal_Conv_struct* h = (Internal_Conv_struct*)(pData->hMCFXConv);
 
-    #if 0 //TODO: remove
-    curMtxConv->Configure(
-        curConvData->getNumInputChannels(),
-        curConvData->getNumOutputChannels(),
-        _BufferSize,
-        curConvData->getMaxLength(),
-        _ConvBufferSize_ref,
-        _MaxPartSize_ref,
-        h->safemode_);
-    #endif
     if (newListenerPos >= h->convdata_s->size())
         return;
 
@@ -868,10 +857,23 @@ void zita_processBlock(Convproc* zita_conv, ConvolverData* conv_data, juce::Audi
 }
 #endif
 
+#ifdef ZEROS_AT_CHANGEBLOCK_END
+void putLastSamplesAtZero(juce::AudioBuffer<float>& buffer, int howmany) {
+    int nSamples = buffer.getNumSamples();
+    for (int i = 0; i < buffer.getNumChannels(); i++) {
+        float* data = buffer.getWritePointer(i);
+        for (int j = nSamples - howmany; j < nSamples; j++) {
+            data[j] = 0.0f;
+        }
+    }
+}
+#endif
+
 void mcfxConv_process(void* const hMcfxConv,
                       juce::AudioBuffer<float>& buffer,
                       int nInputs,
-                      int nOutputs) {
+                      int nOutputs,
+                      bool isNonRealtime) {
 
 
     McfxConvData* pData = (McfxConvData*)(hMcfxConv);
@@ -940,7 +942,11 @@ void mcfxConv_process(void* const hMcfxConv,
 
         #elif MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE
             auto* primingBuffer = h->primingBuffer;
-            volatile auto& primingReadpoint = h->primingReadpoint;
+            auto& primingReadpoint = h->primingReadpoint;
+
+            #ifdef ZEROS_AT_CHANGEBLOCK_END
+                bool zeros_at_changeblock_end = false;
+            #endif
             
 
             if (pData->position_idx != h->posIdx_last) {
@@ -950,9 +956,9 @@ void mcfxConv_process(void* const hMcfxConv,
                 #else
                 for (int convidx = 0; convidx < h->mtxconv_xfd_s->size(); convidx++) {
                     auto* curconv = h->mtxconv_xfd_s->getUnchecked(convidx);
-                    curconv->StopProc();
+                    // curconv->StopProc();
                     curconv->Reset();
-                    curconv->StartProc();
+                    // curconv->StartProc();
                 }
                 // # Force all convolvers to prime
                 #ifdef PRIMING
@@ -965,64 +971,64 @@ void mcfxConv_process(void* const hMcfxConv,
             }
 
             
-            #ifdef PRIMING
-                pData->_isProcessing = true;
-                for (int conv_idx = 0; conv_idx < h->mtxconv_xfd_s->size(); conv_idx++){
-                    CrossfadedConvInfo* curConvInfo = h->mtxconv_xfd_info_s->getUnchecked(conv_idx);
-                    MtxConvMaster* curMtxConv = h->mtxconv_xfd_s->getUnchecked(conv_idx);
+           #ifdef PRIMING
+            pData->_isProcessing = true;
+            for (int conv_idx = 0; conv_idx < h->mtxconv_xfd_s->size(); conv_idx++){
+                CrossfadedConvInfo* curConvInfo = h->mtxconv_xfd_info_s->getUnchecked(conv_idx);
+                MtxConvMaster* curMtxConv = h->mtxconv_xfd_s->getUnchecked(conv_idx);
 
-                    // # Part 1. If priming is needed, read from the priming buffer and process the block
-                    //           We are not interested in the conv output, just to fill partitions' buffers
-                    if (curConvInfo->requiresPriming) {
-                        juce::AudioBuffer<float> tempInBuf(primingBuffer->getNumChannels(), pData->_BufferSize);
-                        volatile int currentReadpoint = primingReadpoint; //TODO: remove volatile
-                        for (int pRound = 0; pRound < PRIMING_BUF_SIZE_BLOCKS; pRound++) {
-                            // int curSizeSamples = jmin(buffer.getNumSamples(), primingBuffer->getNumSamples() - currentReadpoint);
-                            //TODO: figure a better way than "primingBuffer->getNumSamples() - currentReadpoint" to handle different size than block size
-                            int curSizeSamples = jmin(buffer.getNumSamples(), primingBuffer->getNumSamples());//TODO: remove
-                            // printf("curSizeSamples: %d", curSizeSamples); //TODO: remove
-                            // fflush(stdout); //TODO: remove
-                            // printf("currentReadpoint: %d", currentReadpoint); //TODO: remove
-                            // fflush(stdout); //TODO: remove
-                            for (int prch = 0; prch < pData->nInputChannels; prch++) { //TODO: urgent check channelnum
-                                jassert(prch < primingBuffer->getNumChannels());
-                                jassert(prch < tempInBuf.getNumChannels());
-                                if (currentReadpoint + curSizeSamples > primingBuffer->getNumSamples()) {
-                                    tempInBuf.copyFrom(prch, 0, primingBuffer->getReadPointer(prch) + currentReadpoint, primingBuffer->getNumSamples() - currentReadpoint);
-                                    tempInBuf.copyFrom(prch, primingBuffer->getNumSamples() - currentReadpoint, primingBuffer->getReadPointer(prch), curSizeSamples - (primingBuffer->getNumSamples() - currentReadpoint));
-                                    #ifdef TEST_PRIMING_BUFFER_STATE
-                                        // In this extreme test case, we try and copy back the temp buffer to the priming buffer in the same exact way
-                                        // This is to test if the priming buffer is correctly filled and read
-                                        primingBuffer->copyFrom(prch, currentReadpoint, tempInBuf.getReadPointer(prch), primingBuffer->getNumSamples() - currentReadpoint);
-                                        primingBuffer->copyFrom(prch, 0, tempInBuf.getReadPointer(prch) + primingBuffer->getNumSamples() - currentReadpoint, curSizeSamples - (primingBuffer->getNumSamples() - currentReadpoint));
-                                    #endif
-                                } else {
-                                    tempInBuf.copyFrom(prch, 0, primingBuffer->getReadPointer(prch) + currentReadpoint, curSizeSamples);
-                                    #ifdef TEST_PRIMING_BUFFER_STATE
-                                        // In this extreme test case, we try and copy back the temp buffer to the priming buffer in the same exact way
-                                        // This is to test if the priming buffer is correctly filled and read
-                                        primingBuffer->copyFrom(prch, currentReadpoint, tempInBuf.getReadPointer(prch), curSizeSamples);
-                                    #endif
-                                } //TODO; possible errors if buffer.getNumSamples() < pData->_BufferSize
-                                // tempInBuf.copyFrom(prch, 0, primingBuffer->getReadPointer(prch) + currentReadpoint, curSizeSamples);
+                // # Part 1. If priming is needed, read from the priming buffer and process the block
+                //           We are not interested in the conv output, just to fill partitions' buffers
+                if (curConvInfo->requiresPriming) {
+                    #ifdef ZEROS_AT_CHANGEBLOCK_END
+                        zeros_at_changeblock_end = true;
+                    #endif
+                    juce::AudioBuffer<float> tempInBuf(primingBuffer->getNumChannels(), pData->_BufferSize);
+                    int currentReadpoint = primingReadpoint;
+                    for (int pRound = 0; pRound < PRIMING_BUF_SIZE_BLOCKS; pRound++) {
+                        // int curSizeSamples = jmin(buffer.getNumSamples(), primingBuffer->getNumSamples() - currentReadpoint);
+                        //TODO: figure a better way than "primingBuffer->getNumSamples() - currentReadpoint" to handle different size than block size
+                        int curSizeSamples = jmin(buffer.getNumSamples(), primingBuffer->getNumSamples());
+                        for (int prch = 0; prch < pData->nInputChannels; prch++) {
+                            jassert(prch < primingBuffer->getNumChannels());
+                            jassert(prch < tempInBuf.getNumChannels());
+                            if (currentReadpoint + curSizeSamples > primingBuffer->getNumSamples()) {
+                                tempInBuf.copyFrom(prch, 0, primingBuffer->getReadPointer(prch) + currentReadpoint, primingBuffer->getNumSamples() - currentReadpoint);
+                                tempInBuf.copyFrom(prch, primingBuffer->getNumSamples() - currentReadpoint, primingBuffer->getReadPointer(prch), curSizeSamples - (primingBuffer->getNumSamples() - currentReadpoint));
+                                #ifdef TEST_PRIMING_BUFFER_STATE
+                                    // In this extreme test case, we try and copy back the temp buffer to the priming buffer in the same exact way
+                                    // This is to test if the priming buffer is correctly filled and read
+                                    primingBuffer->copyFrom(prch, currentReadpoint, tempInBuf.getReadPointer(prch), primingBuffer->getNumSamples() - currentReadpoint);
+                                    primingBuffer->copyFrom(prch, 0, tempInBuf.getReadPointer(prch) + primingBuffer->getNumSamples() - currentReadpoint, curSizeSamples - (primingBuffer->getNumSamples() - currentReadpoint));
+                                #endif
+                            } else {
+                                tempInBuf.copyFrom(prch, 0, primingBuffer->getReadPointer(prch) + currentReadpoint, curSizeSamples);
+                                #ifdef TEST_PRIMING_BUFFER_STATE
+                                    // In this extreme test case, we try and copy back the temp buffer to the priming buffer in the same exact way
+                                    // This is to test if the priming buffer is correctly filled and read
+                                    primingBuffer->copyFrom(prch, currentReadpoint, tempInBuf.getReadPointer(prch), curSizeSamples);
+                                #endif
                             } //TODO; possible errors if buffer.getNumSamples() < pData->_BufferSize
-                            curMtxConv->processBlock(tempInBuf, tempInBuf, curSizeSamples, true);
-                            if (curMtxConv->getSkipCount() > 0) {
-                                throw std::logic_error("Primed convolver should not skip any blocks"); //TODO: remove when finished
-                            }
-                            // currentReadpoint = (currentReadpoint + pData->_BufferSize)*primingBuffer->getNumSamples();
-                            currentReadpoint = (currentReadpoint + curSizeSamples)%primingBuffer->getNumSamples();
+                            // tempInBuf.copyFrom(prch, 0, primingBuffer->getReadPointer(prch) + currentReadpoint, curSizeSamples);
+                        } //TODO; possible errors if buffer.getNumSamples() < pData->_BufferSize
+                        // Clear remaining channels in tempInBuf
+                        for (int prch = pData->nInputChannels; prch < tempInBuf.getNumChannels(); prch++) {
+                            tempInBuf.clear(prch, 0, curSizeSamples);
                         }
-                        curConvInfo->requiresPriming = false;
+                        curMtxConv->processBlock(tempInBuf, tempInBuf, curSizeSamples, true);
+                        currentReadpoint = (currentReadpoint + curSizeSamples)%primingBuffer->getNumSamples();
                     }
-
-                    // # Part 2. Update the priming buffer before processing the block
-                    for (int prch = 0; prch < jmin(buffer.getNumChannels(), primingBuffer->getNumChannels()); prch++) {  // TODO: urgent check channelnum
-                        primingBuffer->copyFrom(prch, primingReadpoint, buffer, prch, 0, buffer.getNumSamples()); //TODO: uncomment
-                    }
-                    primingReadpoint = (primingReadpoint + pData->_BufferSize)%primingBuffer->getNumSamples();
+                    curConvInfo->requiresPriming = false;
                 }
-            #endif
+            }
+
+            // # Part 2. Update the priming buffer before processing the block
+            for (int prch = 0; prch < jmin(buffer.getNumChannels(), primingBuffer->getNumChannels()); prch++) {  // TODO: urgent check channelnum
+                primingBuffer->copyFrom(prch, primingReadpoint, buffer, prch, 0, buffer.getNumSamples()); //TODO: uncomment
+            }
+            // Update the readpoint          
+            primingReadpoint = (primingReadpoint + pData->_BufferSize) % primingBuffer->getNumSamples();
+           #endif
 
             pData->_isProcessing = true;
             for (int conv_idx = 0; conv_idx < h->mtxconv_xfd_s->size(); conv_idx++){
@@ -1045,8 +1051,8 @@ void mcfxConv_process(void* const hMcfxConv,
                 auto* curOutBuf = h->mtxconv_xfd_outputs_s->getUnchecked(conv_idx);
                 curOutBuf->clear(); //TODO: probably useless
 
-                // curMtxConv->processBlock(buffer, buffer, isNonRealtime()); // if isNotRealtime always set to true!
-                curMtxConv->processBlock(buffer, *curOutBuf, buffer.getNumSamples(), true);  // try to always wait except - add a special flag to deactivate waiting...
+                curMtxConv->processBlock(buffer, *curOutBuf, buffer.getNumSamples(), isNonRealtime); // if isNotRealtime always set to true!
+                // curMtxConv->processBlock(buffer, *curOutBuf, buffer.getNumSamples(), true);  // try to always wait except - add a special flag to deactivate waiting...
                 h->_skippedCycles.set(curMtxConv->getSkipCount());
     #endif
             }
@@ -1056,27 +1062,8 @@ void mcfxConv_process(void* const hMcfxConv,
                 auto* curXfdInfo = h->mtxconv_xfd_info_s->getUnchecked(conv_idx);
                 auto* curXfdOut = h->mtxconv_xfd_outputs_s->getUnchecked(conv_idx);
 
-                // if (conv_idx == 0) {
-                //    // Skip processing to test crossfade TODO: remove
-                //    if (curXfdInfo->isFadingIn || curXfdInfo->isFadingOut)
-                //        curXfdInfo->gain.skip(buffer.getNumSamples());
-                //    continue;
-                // }
-
-
                 if (! curXfdInfo->isProcessing)
                     continue;
-
-                #if 0 //TODO: remove
-                    if (conv_idx == 1) {
-                        printf("Convx 1 is processing");
-                        fflush(stdout);
-                    }
-                    if (conv_idx == 0) {
-                        printf("Convx 0 is processing");
-                        fflush(stdout);
-                    }
-                #endif
 
                 if (curXfdInfo->isFadingIn || curXfdInfo->isFadingOut) {
     #if (CROSSFADE == CROSSFADE_DEBUG_MUTE)
@@ -1085,7 +1072,7 @@ void mcfxConv_process(void* const hMcfxConv,
     #elif (CROSSFADE == CROSSFADE_DEBUG_DISABLE)
                     curXfdOut->applyGain(0.5f);  // Set gain at 0.5 if crossfade is disabled
                     curXfdInfo->gain.skip(buffer.getNumSamples());
-    #elif (CROSSFADE == CROSSFADE_DEBUG_ON)
+    #elif (CROSSFADE == CROSSFADE_RELEASE)
                     curXfdInfo->gain.applyGain(*curXfdOut, nSamples);
     #else
         #error "Invalid CROSSFADE value"
@@ -1102,7 +1089,7 @@ void mcfxConv_process(void* const hMcfxConv,
                 }
             }
 
-        #ifdef TEST_PRIMING_BUFFER_STATE //TODO: remove test
+        #ifdef TEST_PRIMING_BUFFER_STATE
             // We test that the buffer is correct by copying back the priming buffer to the output
             volatile int testreadpoint = primingReadpoint - buffer.getNumSamples();
             buffer.clear();
@@ -1119,6 +1106,11 @@ void mcfxConv_process(void* const hMcfxConv,
 
         #else
             #error "Invalid MCFX_CONVOLVER_MODE"
+        #endif
+
+        #ifdef ZEROS_AT_CHANGEBLOCK_END
+            if (zeros_at_changeblock_end)
+                putLastSamplesAtZero(buffer, 4);
         #endif
 
         } else {  // config loaded

@@ -37,20 +37,24 @@
 
 #define MCFX_CONVOLVER_MODE CROSSFADED_CONVOLVERS_MODE
 #define PRIMING // Used to fill the convolver buffers with coherend data before switching to it
-#define PRIMING_BUF_SIZE_BLOCKS 16 // This does something bad only if too small, but there is some other kind of discontinuity even when large
+#define PRIMING_BUF_SIZE_BLOCKS 8 // This does something bad only if too small, but there is some other kind of discontinuity even when large
+//TODO: determine priming buffer size with length of the longest IR PARETITION
 
 // Next defines are here for debugging purposes
-#define DISABLE_FILTER_REPLACEMENT
-#define DISABLE_ENTIRELY_CONV_CHANGE_BUT_RESET
-// #define DISABLE_CONV_RESET
+// #define DISABLE_FILTER_REPLACEMENT // [FOR DEBUG] 
+// #define DISABLE_ENTIRELY_CONV_CHANGE_BUT_RESET // [FOR DEBUG] 
+// #define DISABLE_CONV_RESET // [FOR DEBUG] 
+// #define ZEROS_AT_CHANGEBLOCK_END // [FOR DEBUG] Sets 4 samples at 0 at the end of priming blocks
 
-#define CROSSFADE_DEBUG_MUTE 0
-#define CROSSFADE_DEBUG_DISABLE 1
+#define CROSSFADE_RELEASE 0
+// #define CROSSFADE_DEBUG_MUTE 1 // [FOR DEBUG]
+// #define CROSSFADE_DEBUG_DISABLE 2 // [FOR DEBUG]
 //---
-#define CROSSFADE CROSSFADE_DEBUG_MUTE
-// #define CROSSFADE CROSSFADE_DEBUG_DISABLE
+#define CROSSFADE CROSSFADE_RELEASE
+// #define CROSSFADE CROSSFADE_DEBUG_MUTE // [FOR DEBUG]
+// #define CROSSFADE CROSSFADE_DEBUG_DISABLE // [FOR DEBUG]
 
-// #define TEST_PRIMING_BUFFER_STATE // This overwrites entire buffer with the priming buffer, to check if the priming buffer is correctly filled
+// #define TEST_PRIMING_BUFFER_STATE  // [FOR DEBUG] This overwrites entire buffer with the priming buffer, to check if the priming buffer is correctly filled
 
 #include "_common.h"
 #include "md_malloc.h"      //TODO: see whether to better integrate this with SAF
@@ -137,7 +141,8 @@ void tvconv_process(void* const hMcfxConv,
 void mcfxConv_process(void* const hMcfxConv,
                     juce::AudioBuffer<float>& buffer,
                     int nInputs,
-                    int nOutputs);
+                    int nOutputs,
+                    bool isNonRealtime = true);
 
 
 /* ========================================================================== */
