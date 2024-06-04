@@ -32,12 +32,11 @@
 
 #define PER_POS_CONVOLVER_MODE 1
 #define SINGLE_CONVOLVER_MODE 2
-#define CROSSFADED_CONVOLVERS_MODE 3
+#define CROSSFADE_1BLOCK_MODE 3
+#define CROSSFADE_PARAMETRIC_MODE 4
 
-#define MCFX_CONVOLVER_MODE CROSSFADED_CONVOLVERS_MODE
-#define PRIMING                    // Used to fill the convolver buffers with coherend data before switching to it
-#define PRIMING_BUF_SIZE_BLOCKS 8  // This does something bad only if too small, but there is some other kind of discontinuity even when large
-// TODO: determine priming buffer size with length of the longest IR PARETITION
+#define MCFX_CONVOLVER_MODE CROSSFADE_1BLOCK_MODE
+// #define PRIMING  // Used to fill the convolver buffers with coherend data before switching to it
 
 // Next defines are here for debugging purposes
 // #define DISABLE_FILTER_REPLACEMENT // [FOR DEBUG]
@@ -49,7 +48,7 @@
 #define CROSSFADE_DEBUG_MUTE 2     // [FOR DEBUG]
 #define CROSSFADE_DEBUG_DISABLE 3  // [FOR DEBUG]
 //---
-#define CROSSFADE CROSSFADE_RELEASE
+#define CROSSFADE CROSSFADE_RELEASE 
 // #define CROSSFADE CROSSFADE_DEBUG_MUTE // [FOR DEBUG]
 // #define CROSSFADE CROSSFADE_DEBUG_DISABLE // [FOR DEBUG]
 
@@ -57,6 +56,21 @@
 
 #ifdef USE_ZITA_CONVOLVER
     #error "Not implemented yet (This was in MCFX but has not been correctly ported here)"
+#endif
+
+#if (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
+    #error "Not fully implemented yet (Read comments at this line for more info)"
+    // The code in CROSSFADE_1BLOCK_MODE is basically ready for multiple convolvers and long crossfades,
+    // but there are a few bugs to iron out.
+    // 1st with long crossfades and fast movement the code throws an exception
+    // 2nd I did not find (yet) a way to optimize crossfade time for convolvers that are already fading out and need to fade in again.
+    //     Without this the mechanism is super inefficient because it will quickly use all available convolvers for absurdely long fades.
+    //     Age is does not seem a good metric for this because the convolver may have been triggered on and off a few times, leading to an 
+    //     age that is not representative of the actual position in the gain range.
+    //     Current interpolated gain may be it. but it relies heavily on the linear crossfade used. If that is changed, this will break
+    //     e.g. if the current gain is at 0.5 and fading out, the crossfade time should be halved (if linear obv
+    //     if the current gain is at 0.75 and fading out, the crossfade time should be 1/4th of the original time since it only needs to cover a linear quarter of the range to go back to 1.0
+    // NB in Plugin editor, crossfade control are disabled unless convolver mode is CROSSFADE_PARAMETRIC_MODE
 #endif
 
 #include "_common.h"
@@ -71,7 +85,6 @@
 
 #include "MCFX_ConvolverData.h"
 #include "MCFX_MtxConv.h"
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -258,17 +271,20 @@ void mcfxConv_setConvBufferSize(void* const hMcfxConv, unsigned int convBufferSi
 /** Set the Maximum partition size (non uniform conv partitioning) of the MCFX convolver engine*/
 void mcfxConv_setMaxPartitionSize(void* const hMcfxConv, unsigned int maxPartitionSize);
 
-#if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)  //[ds 2024]
+#if ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
 float mcfxConv_getMaxCrossfadeTimeS(void* const hMcfxConv, bool* minReached = NULL, bool* maxReached = NULL);
+float mcfxConv_getCrossfadeTime_s(void* const hMcfxConv);
+float mcfxConv_getCrossfadeTime_ms(void* const hMcfxConv);
+unsigned int mcfxConv_getCrossfadeTime_samples(void* const hMcfxConv);
+#endif
+
+#if (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
 void mcfxConv_DoubleCrossfadeTime(void* const hMcfxConv, bool* maxReached);
 void mcfxConv_HalveCrossfadeTime(void* const hMcfxConv, bool* minReached);
 
 void mcfxConv_setCrossfadeTime_samples(void* const hMcfxConv, unsigned int crossfadeTime_samples);
 void mcfxConv_setCrossfadeTime_s(void* const hMcfxConv, float crossfadeTime_s);
 void mcfxConv_setCrossfadeTime_ms(void* const hMcfxConv, float crossfadeTime_ms);
-float mcfxConv_getCrossfadeTime_s(void* const hMcfxConv);
-float mcfxConv_getCrossfadeTime_ms(void* const hMcfxConv);
-unsigned int mcfxConv_getCrossfadeTime_samples(void* const hMcfxConv);
 #endif
 
 #ifdef __cplusplus

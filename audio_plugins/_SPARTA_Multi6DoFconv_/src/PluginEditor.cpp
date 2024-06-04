@@ -355,15 +355,22 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     setSize (860, 500);
 
-
     //[Constructor] You can add your own custom stuff here..
 
-    #if MCFX_CONVOLVER_MODE != CROSSFADED_CONVOLVERS_MODE
+    #if (MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)
+        SL_crossfadeTimeMs->setEnabled(false);
+        btn_doubleCrossfade->setVisible(false);
+        btn_halveCrossfade->setVisible(false);
+        SL_crossfadeTimeMs->setTooltip("Crossfade time in milliseconds, fixed to 1 audio block size. This is the time it takes to crossfade between the IR-convolved output for any two listener positions. Source code is prepared for longer crossfade, but it is not fully implemented yet.");
+    #elif (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
+        SL_crossfadeTimeMs->setVisible(true);
+        btn_doubleCrossfade->setVisible(true);
+        btn_halveCrossfade->setVisible(true);
+    #else
         SL_crossfadeTimeMs->setVisible(false);
         btn_doubleCrossfade->setVisible(false);
         btn_halveCrossfade->setVisible(false);
     #endif
-
 
 	hVst = ownerFilter;
     hTVC = hVst->getFXHandle();
@@ -1213,7 +1220,7 @@ void PluginEditor::paint (juce::Graphics& g)
         juce::String text (TRANS("Crossfade Time [ms]:"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
-        #if MCFX_CONVOLVER_MODE != CROSSFADED_CONVOLVERS_MODE
+        #if MCFX_CONVOLVER_MODE != CROSSFADE_1BLOCK_MODE
             text = "";
         #endif
         //[/UserPaintCustomArguments]
@@ -1227,7 +1234,9 @@ void PluginEditor::paint (juce::Graphics& g)
         int x = 172, y = 334, width = 168, height = 20;
         juce::Colour fillColour = juce::Colour (0x93ff0000);
         //[UserPaintCustomArguments] Customize the painting arguments here..
-       #if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+       #if (MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)
+        fillColour = juce::Colour (0x00000000);
+       #elif (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
         fillColour = crossfadeSldBackground;
         
         crossfadeWarningArea.setY(y);
@@ -1253,7 +1262,7 @@ void PluginEditor::paint (juce::Graphics& g)
 
 
 
-    #if MCFX_CONVOLVER_MODE != CROSSFADED_CONVOLVERS_MODE
+    #if MCFX_CONVOLVER_MODE != CROSSFADE_1BLOCK_MODE
         int x = 18, y = 331, width = 300, height = 26;
         juce::String text (TRANS("Crossfade Disabled during build"));
         juce::Colour fillColour = juce::Colours::darkred;
@@ -1437,13 +1446,11 @@ void PluginEditor::sliderValueChanged (juce::Slider* sliderThatWasMoved)
         //[UserSliderCode_SL_crossfadeTimeMs] -- add your slider handling code here..
 
         // Turn red if the value is over 10
-       #if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+       #if (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
         if (SL_crossfadeTimeMs->getValue() > maximumSafeCrossfadeMS)
             crossfadeSldBackground = Colours::red; //SL_crossfadeTimeMs->setColour(Slider::backgroundColourId, Colours::red);
         else
             crossfadeSldBackground = Colours::black; //SL_crossfadeTimeMs->setColour(Slider::backgroundColourId, Colours::black);
-
-
         mcfxConv_setCrossfadeTime_ms(hTVC, SL_crossfadeTimeMs->getValue());
        #endif
         //[/UserSliderCode_SL_crossfadeTimeMs]
@@ -1520,7 +1527,8 @@ void PluginEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_btn_doubleCrossfade] -- add your button handler code here..
        #if (MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(PER_POS_CONVOLVER_MODE)
        #elif (MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(SINGLE_CONVOLVER_MODE)
-       #elif (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+       #elif (MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)
+       #elif (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
         bool maxReached;
         mcfxConv_DoubleCrossfadeTime(hTVC, &maxReached);
         if (maxReached)
@@ -1538,7 +1546,8 @@ void PluginEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_btn_halveCrossfade] -- add your button handler code here..
        #if (MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(PER_POS_CONVOLVER_MODE)
        #elif (MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(SINGLE_CONVOLVER_MODE)
-       #elif (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+       #elif (MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)
+       #elif (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
         bool minReached;
         mcfxConv_HalveCrossfadeTime(hTVC, &minReached);
         if (minReached)
@@ -1643,7 +1652,9 @@ void PluginEditor::updateCrossfadeRange() {
     float maxtimeS = 0;
    #elif (MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(SINGLE_CONVOLVER_MODE)
     float maxtimeS = 0;
-   #elif (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+   #elif (MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)
+    float maxtimeS = mcfxConv_getCrossfadeTime_ms(hTVC);
+   #elif (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
     float maxtimeS = mcfxConv_getMaxCrossfadeTimeS(hTVC, &minReached, &maxReached);
    #else
     #error "Invalid MCFX_CONVOLVER_MODE"
@@ -1651,8 +1662,11 @@ void PluginEditor::updateCrossfadeRange() {
     maximumSafeCrossfadeMS = maxtimeS * 1000.0;
 
     SL_crossfadeTimeMs->setRange(0,
-                                 maximumSafeCrossfadeMS * BEYOND_SAFE_CROSSFADE_FACTOR,
-                                 0.1);
+                                 maximumSafeCrossfadeMS 
+                                #if (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
+                                 * BEYOND_SAFE_CROSSFADE_FACTOR
+                                #endif
+                                 ,0.1);
     if (!maxReached)
             btn_doubleCrossfade->setEnabled(true);
     if (!minReached)

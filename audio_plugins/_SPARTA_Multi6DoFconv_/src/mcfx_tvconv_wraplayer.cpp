@@ -68,7 +68,7 @@ typedef struct _internal_MCFXConv_struct {
     juce::OwnedArray<MtxConvMaster>* mtxconv_s;  // One convolver per position, no crossfade  (You can hear clicks when changing positions, plus very inefficient in terms of CPU & memory usage)
     #elif (MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(SINGLE_CONVOLVER_MODE)
     MtxConvMaster* mtxconv;  // Single convolver with no crossfade between positions (You can hear clicks when changing positions)
-    #elif (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+    #elif ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
     juce::OwnedArray<MtxConvMaster>* mtxconv_xfd_s;  // Multiple convolvers with crossfade between positions
     juce::OwnedArray<CrossfadedConvInfo>* mtxconv_xfd_info_s;
     juce::OwnedArray<juce::AudioBuffer<float> >* mtxconv_xfd_outputs_s;
@@ -92,9 +92,11 @@ typedef struct _internal_MCFXConv_struct {
 
     int posIdx_last;
 
-#if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+#ifdef PRIMING
+    #if ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
     juce::AudioBuffer<float>* primingBuffer;
     int primingReadpoint;
+    #endif
 #endif
 } Internal_Conv_struct;
 
@@ -116,13 +118,9 @@ void mcfxConv_create(
     double sampleRate,
     int ir_fs,
     unsigned int& _MaxPartSize_ref
-#if (MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(PER_POS_CONVOLVER_MODE)
-#elif (MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(SINGLE_CONVOLVER_MODE)
-#elif (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+#if ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
     ,
     int num_xfd_convolvers, unsigned int& xfdTime_samples
-#else
-    #error "Invalid MCFX_CONVOLVER_MODE"
 #endif
 ) {
 
@@ -152,7 +150,7 @@ void mcfxConv_create(
     }
 #elif (MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(SINGLE_CONVOLVER_MODE)
     h->mtxconv = new MtxConvMaster;
-#elif (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+#elif ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
     h->mtxconv_xfd_s = new juce::OwnedArray<MtxConvMaster>();
     h->mtxconv_xfd_info_s = new juce::OwnedArray<CrossfadedConvInfo>();
     h->mtxconv_xfd_outputs_s = new juce::OwnedArray<juce::AudioBuffer<float> >();
@@ -168,7 +166,9 @@ void mcfxConv_create(
     xfdTime_samples = _BufferSize * (num_xfd_convolvers - 1);
 
     #ifdef PRIMING
-    h->primingBuffer = new juce::AudioBuffer<float>(jmax(nCHin, nCHout), _BufferSize * PRIMING_BUF_SIZE_BLOCKS);
+    // PRIMING_BUF_SIZE_BLOCKS has to be std::ceilf(pData->ir_length / _BufferSize)
+    int priming_buf_size_blocks = std::ceilf((float)length_h / (float)_BufferSize);
+    h->primingBuffer = new juce::AudioBuffer<float>(jmax(nCHin, nCHout), _BufferSize * priming_buf_size_blocks);
     h->primingReadpoint = 0;
     #endif
 #else
@@ -248,16 +248,16 @@ void mcfxConv_create(
     int convolversToInit = nIRs;
     #elif (MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(SINGLE_CONVOLVER_MODE)
     int convolversToInit = 1;
-    #elif (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+    #elif ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
     int convolversToInit = num_xfd_convolvers;
     #else
         #error "Invalid MCFX_CONVOLVER_MODE"
     #endif
 
     // Here we initialize ALL the convolvers used.
-    // if SINGLECONVOLVER is defined, only one convolver is initialized
-    // if CROSSFADED_MULTIPLE_CONVOLVERS is defined, a set number of convolvers (< or > than the number of positions) is initialized (each conv with data from a different position)
-    // if neither is defined, a convolver is initialized for each position, with the data from that position
+    // when MCFX_CONVOLVER_MODE is PER_POS_CONVOLVER_MODE we are in a test mode (too inefficient) where there is a convolver for each position (many threads each)
+    // if MCFX_CONVOLVER_MODE corresponds to SINGLE_CONVOLVER_MODE, only one convolver is initialized and there is no crossfade between positions (clicks when changing positions)
+    // if MCFX_CONVOLVER_MODE is CROSSFADE_1BLOCK_MODE or CROSSFADE_PARAMETRIC_MODE, a set number of convolvers is initialized
     for (int conv_idx = 0; conv_idx < convolversToInit; conv_idx++) {
         int data_idx = conv_idx % h->convdata_s->size();  // in the case of CROSSFADED_MULTIPLE_CONVOLVERS and more convolvers than positions, we cycle through the positions
         ConvolverData* curConvData = h->convdata_s->getUnchecked(data_idx);
@@ -266,7 +266,7 @@ void mcfxConv_create(
         MtxConvMaster* curMtxConv = h->mtxconv_s->getUnchecked(conv_idx);
     #elif (MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(SINGLE_CONVOLVER_MODE)
         MtxConvMaster* curMtxConv = h->mtxconv;
-    #elif (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+    #elif ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
         MtxConvMaster* curMtxConv = h->mtxconv_xfd_s->getUnchecked(conv_idx);
         CrossfadedConvInfo* curXfdInfo = h->mtxconv_xfd_info_s->getUnchecked(conv_idx);
 
@@ -332,7 +332,7 @@ void mcfxConv_create(
         h->mtxconv->StopProc();
         h->mtxconv->Cleanup();
         delete h->mtxconv;
-    #elif (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+    #elif ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
         // Stop processing for all convolvers
         for (int conv_idx = 0; conv_idx < h->mtxconv_xfd_s->size(); conv_idx++) {
             MtxConvMaster* curMtxConv = h->mtxconv_xfd_s->getUnchecked(conv_idx);
@@ -361,7 +361,7 @@ void mcfxConv_create(
         *phMCFXc = NULL;
     }
 
-#if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+#if ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
 
     enum ConvolverStealingStrategy {
         LOWEST_GAIN,
@@ -640,7 +640,7 @@ void mcfxConv_create(
         /* Added when porting MCFX to 6DoF*/
         bool resampled_ir = false;
 
-#if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+#if ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
         /* For Crossfade we use a number of convolvers that handle multiple convolutions while switching between matrices */
         int num_xfd_convolvers;
         unsigned int xfdTime_samples;
@@ -690,7 +690,7 @@ void mcfxConv_create(
         pData->_paramReload = false;
         pData->resampled_ir = false;
 
-#if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+#if ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
         pData->num_xfd_convolvers = DEF_NCONVOLVERS;  // Default number of convolvers for crossfade
         pData->xfdTime_samples = 0;
 #endif
@@ -859,9 +859,11 @@ void mcfxConv_create(
                 pData->_isProcessing = false;
             }
 
-#elif (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+#elif ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
+    #ifdef PRIMING
                 auto* primingBuffer = h->primingBuffer;
                 auto& primingReadpoint = h->primingReadpoint;
+    #endif
 
     #ifdef ZEROS_AT_CHANGEBLOCK_END
                 bool zeros_at_changeblock_end = false;
@@ -902,7 +904,8 @@ void mcfxConv_create(
         #endif
                         juce::AudioBuffer<float> tempInBuf(primingBuffer->getNumChannels(), pData->_BufferSize);
                         int currentReadpoint = primingReadpoint;
-                        for (int pRound = 0; pRound < PRIMING_BUF_SIZE_BLOCKS; pRound++) {
+                        int priming_buf_size_blocks = primingBuffer->getNumSamples() / pData->_BufferSize;
+                        for (int pRound = 0; pRound < priming_buf_size_blocks; pRound++) {
                             // int curSizeSamples = jmin(buffer.getNumSamples(), primingBuffer->getNumSamples() - currentReadpoint);
                             // TODO: figure a better way than "primingBuffer->getNumSamples() - currentReadpoint" to handle different size than block size
                             int curSizeSamples = jmin(buffer.getNumSamples(), primingBuffer->getNumSamples());
@@ -1068,7 +1071,7 @@ void mcfxConv_create(
                                 pData->_SampleRate,  // _sampleRate was passed as required by MCFX convdata, as double
                                 pData->ir_fs,        // Original IR samplerate for resampling
                                 pData->_MaxPartSize  // PASSED AS REFERENCE
-#if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+#if ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
                                 ,
                                 pData->num_xfd_convolvers, pData->xfdTime_samples
 #endif
@@ -1461,7 +1464,25 @@ void mcfxConv_create(
         }
     }
 
-#if (MCFX_CONVOLVER_MODE == CROSSFADED_CONVOLVERS_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADED_CONVOLVERS_MODE)
+#if ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
+    unsigned int mcfxConv_getCrossfadeTime_samples(void* const hMcfxConv) {
+        if (hMcfxConv == NULL) return 0;  // If the handle is invalid, return 0 as the number of skipped cycles
+        McfxConvData* pData = (McfxConvData*)(hMcfxConv);
+        return pData->xfdTime_samples;
+    }
+
+    float mcfxConv_getCrossfadeTime_s(void* const hMcfxConv) {
+        if (hMcfxConv == NULL) return 0;  // If the handle is invalid, return 0 as the number of skipped cycles
+        McfxConvData* pData = (McfxConvData*)(hMcfxConv);
+        return (float)pData->xfdTime_samples / (float)pData->_SampleRate;
+    }
+
+    float mcfxConv_getCrossfadeTime_ms(void* const hMcfxConv) {
+        if (hMcfxConv == NULL) return 0;  // If the handle is invalid, return 0 as the number of skipped cycles
+        McfxConvData* pData = (McfxConvData*)(hMcfxConv);
+        return (float)pData->xfdTime_samples / (float)pData->_SampleRate * 1000.0f;
+    }
+
     float mcfxConv_getMaxCrossfadeTimeS(void* const hMcfxConv, bool* minReached, bool* maxReached) {
         if (hMcfxConv == NULL) return 0;
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
@@ -1475,6 +1496,9 @@ void mcfxConv_create(
         float maxCrossfadeTime = (float)(pData->_BufferSize * (pData->num_xfd_convolvers - 1)) / (float)pData->_SampleRate;
         return maxCrossfadeTime;
     }
+#endif
+
+#if (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
 
     void mcfxConv_DoubleCrossfadeTime(void* const hMcfxConv, bool* maxReached) {
         if (hMcfxConv == NULL) return;  // If the handle is invalid, return 0 as the number of skipped cycles
@@ -1523,24 +1547,6 @@ void mcfxConv_create(
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
 
         pData->xfdTime_samples = (unsigned int)(crossfadeTime_ms * pData->_SampleRate / 1000.0f);
-    }
-
-    unsigned int mcfxConv_getCrossfadeTime_samples(void* const hMcfxConv) {
-        if (hMcfxConv == NULL) return 0;  // If the handle is invalid, return 0 as the number of skipped cycles
-        McfxConvData* pData = (McfxConvData*)(hMcfxConv);
-        return pData->xfdTime_samples;
-    }
-
-    float mcfxConv_getCrossfadeTime_s(void* const hMcfxConv) {
-        if (hMcfxConv == NULL) return 0;  // If the handle is invalid, return 0 as the number of skipped cycles
-        McfxConvData* pData = (McfxConvData*)(hMcfxConv);
-        return (float)pData->xfdTime_samples / (float)pData->_SampleRate;
-    }
-
-    float mcfxConv_getCrossfadeTime_ms(void* const hMcfxConv) {
-        if (hMcfxConv == NULL) return 0;  // If the handle is invalid, return 0 as the number of skipped cycles
-        McfxConvData* pData = (McfxConvData*)(hMcfxConv);
-        return (float)pData->xfdTime_samples / (float)pData->_SampleRate * 1000.0f;
     }
 
 #endif
