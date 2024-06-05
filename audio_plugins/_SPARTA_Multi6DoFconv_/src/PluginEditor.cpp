@@ -429,9 +429,9 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     addAndMakeVisible(fileComp.get());
     fileComp->addListener(this);
     fileComp->setBounds(16, 62, 380, 20);
-    if (strcmp(tvconv_getSofaFilePath(hTVC), "no_file") != 0) {
+    if (strcmp(mcfxConv_getSofaFilePath(hTVC), "no_file") != 0) {
         // string is different from "no_file" -> it's been selected a valid file
-        fileComp->setCurrentFile(String(tvconv_getSofaFilePath(hTVC)), true, dontSendNotification);
+        fileComp->setCurrentFile(String(mcfxConv_getSofaFilePath(hTVC)), true, dontSendNotification);
         refreshCoords();
         refreshSceneViewWindow = true;
         sceneWindow->refreshSceneView();
@@ -1327,39 +1327,39 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     g.setColour(Colours::white);
-    switch (tvConvError)
+    switch (mcfxConvError)
     {
-    case SAF_TVCONV_NOT_INIT: /** TVCONV no file loaded */
+    case SAF_MCFX_NOT_INIT: /** MCFX no file loaded */
         g.drawText(TRANS("SOFA file not initialized"),
             136, 45, 264, 11,
             Justification::centredLeft, true);
         break;
-    case SAF_TVCONV_SOFA_LOADING: /** Loading SOFA file */
+    case SAF_MCFX_SOFA_LOADING: /** Loading SOFA file */
         g.drawText(TRANS("SOFA file: loading"),
             136, 45, 264, 11,
             Justification::centredLeft, true);
         break;
-    case SAF_TVCONV_SOFA_OK: /** None of the error checks failed */
+    case SAF_MCFX_SOFA_OK: /** None of the error checks failed */
         g.drawText(TRANS("SOFA file loaded"),
             136, 45, 264, 11,
             Justification::centredLeft, true);
         break;
-    case SAF_TVCONV_SOFA_ERROR_INVALID_FILE_OR_FILE_PATH:  /** Not a SOFA file, or no such file was found in the specified location */
+    case SAF_MCFX_SOFA_ERROR_INVALID_FILE_OR_FILE_PATH:  /** Not a SOFA file, or no such file was found in the specified location */
         g.drawText(TRANS("SOFA file not loaded: INVALID FILE OR FILE PATH"),
             136, 45, 264, 11,
             Justification::centredLeft, true);
         break;
-    case SAF_TVCONV_SOFA_ERROR_DIMENSIONS_UNEXPECTED:      /** Dimensions of the SOFA data were not as expected */
+    case SAF_MCFX_SOFA_ERROR_DIMENSIONS_UNEXPECTED:      /** Dimensions of the SOFA data were not as expected */
         g.drawText(TRANS("SOFA file not loaded: DIMENSIONS UNEXPECTED"),
             136, 45, 264, 11,
             Justification::centredLeft, true);
         break;
-    case SAF_TVCONV_SOFA_ERROR_FORMAT_UNEXPECTED: /** The data-type of the SOFA data was not as expected */
+    case SAF_MCFX_SOFA_ERROR_FORMAT_UNEXPECTED: /** The data-type of the SOFA data was not as expected */
         g.drawText(TRANS("SOFA file not loaded: FORMAT UNEXPECTED"),
             136, 45, 264, 11,
             Justification::centredLeft, true);
         break;
-    case SAF_TVCONV_SOFA_ERROR_NETCDF_IN_USE: /** NetCDF is not thread safe! */
+    case SAF_MCFX_SOFA_ERROR_NETCDF_IN_USE: /** NetCDF is not thread safe! */
         g.drawText(TRANS("SOFA file not loaded: NETCDF IN USE"),
             136, 45, 264, 11,
             Justification::centredLeft, true);
@@ -1405,21 +1405,21 @@ void PluginEditor::sliderValueChanged (juce::Slider* sliderThatWasMoved)
     else if (sliderThatWasMoved == SL_receiver_x.get())
     {
         //[UserSliderCode_SL_receiver_x] -- add your slider handling code here..
-        tvconv_setTargetPosition(hTVC, SL_receiver_x->getValue(), 0);
+        mcfxConv_setTargetPosition(hTVC, SL_receiver_x->getValue(), 0);
         refreshSceneViewWindow = true;
         //[/UserSliderCode_SL_receiver_x]
     }
     else if (sliderThatWasMoved == SL_receiver_y.get())
     {
         //[UserSliderCode_SL_receiver_y] -- add your slider handling code here..
-        tvconv_setTargetPosition(hTVC, SL_receiver_y->getValue(), 1);
+        mcfxConv_setTargetPosition(hTVC, SL_receiver_y->getValue(), 1);
         refreshSceneViewWindow = true;
         //[/UserSliderCode_SL_receiver_y]
     }
     else if (sliderThatWasMoved == SL_receiver_z.get())
     {
         //[UserSliderCode_SL_receiver_z] -- add your slider handling code here..
-        tvconv_setTargetPosition(hTVC, SL_receiver_z->getValue(), 2);
+        mcfxConv_setTargetPosition(hTVC, SL_receiver_z->getValue(), 2);
         refreshSceneViewWindow = true;
         //[/UserSliderCode_SL_receiver_z]
     }
@@ -1530,7 +1530,7 @@ void PluginEditor::buttonClicked (juce::Button* buttonThatWasClicked)
        #elif (MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)
        #elif (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
         bool maxReached;
-        mcfxConv_DoubleCrossfadeTime(hTVC, &maxReached);
+        mcfxConv_doubleCrossfadeTime(hTVC, &maxReached);
         if (maxReached)
             btn_doubleCrossfade->setEnabled(false);
         // Update the slider
@@ -1549,7 +1549,7 @@ void PluginEditor::buttonClicked (juce::Button* buttonThatWasClicked)
        #elif (MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)
        #elif (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
         bool minReached;
-        mcfxConv_HalveCrossfadeTime(hTVC, &minReached);
+        mcfxConv_halveCrossfadeTime(hTVC, &minReached);
         if (minReached)
             btn_halveCrossfade->setEnabled(false);
         // Update the slider
@@ -1574,17 +1574,17 @@ void PluginEditor::timerCallback()
     s_yaw->setValue(rotator_getYaw(hRot), dontSendNotification);
     s_pitch->setValue(rotator_getPitch(hRot), dontSendNotification);
     s_roll->setValue(rotator_getRoll(hRot), dontSendNotification);
-    label_hostBlockSize->setText(String(tvconv_getHostBlockSize(hTVC)), dontSendNotification);
+    label_hostBlockSize->setText(String(mcfxConv_getHostBlockSize(hTVC)), dontSendNotification);
     label_NInputs->setText(String(mcfxConv_getMinInCh(hTVC)), dontSendNotification);
     SL_crossfadeTimeMs->setValue(mcfxConv_getCrossfadeTime_ms(hTVC), dontSendNotification);
     label_NOutputs->setText(String(mcfxConv_getMinOutCh(hTVC)), dontSendNotification);
-    label_NIRs->setText(String(tvconv_getNumIRs(hTVC)), dontSendNotification);
-    label_nIRpositions->setText(String(tvconv_getNumListenerPositions(hTVC)), dontSendNotification);
-    label_filterLength->setText(String((float)tvconv_getIRLength(hTVC)/MAX((float)tvconv_getIRFs(hTVC),1/*avoid nan*/)), dontSendNotification);
+    label_NIRs->setText(String(mcfxConv_getNumIRs(hTVC)), dontSendNotification);
+    label_nIRpositions->setText(String(mcfxConv_getNumListenerPositions(hTVC)), dontSendNotification);
+    label_filterLength->setText(String((float)mcfxConv_getIRLength(hTVC)/MAX((float)mcfxConv_getIRFs(hTVC),1/*avoid nan*/)), dontSendNotification);
     int longestPart = mcfxConv_getLongestPartSize(hTVC);
     if (longestPart > 0)
         label_filterLength->setTooltip(String("Longest partition: "+String(mcfxConv_getLongestPartSize(hTVC))+" samples"));
-    label_hostfs->setText(String(tvconv_getHostFs(hTVC)), dontSendNotification);
+    label_hostfs->setText(String(mcfxConv_getHostFs(hTVC)), dontSendNotification);
 
     setPartComboboxes();
 
@@ -1593,31 +1593,31 @@ void PluginEditor::timerCallback()
 
 
 
-    label_filterfs->setText(String(tvconv_getResampledIR(hTVC)?"*":"")+String(tvconv_getIRFs(hTVC)), dontSendNotification);
-    if (tvconv_getResampledIR(hTVC))
+    label_filterfs->setText(String(mcfxConv_getResampledIR(hTVC)?"*":"")+String(mcfxConv_getIRFs(hTVC)), dontSendNotification);
+    if (mcfxConv_getResampledIR(hTVC))
         label_filterfs->setColour(Label::textColourId, Colours::orange);
     else
         label_filterfs->setColour(Label::textColourId, Colours::white);
 
-    label_receiverIdx->setText(String(tvconv_getListenerPositionIdx(hTVC)), dontSendNotification);
+    label_receiverIdx->setText(String(mcfxConv_getListenerPositionIdx(hTVC)), dontSendNotification);
 
-    SL_receiver_x->setValue(tvconv_getTargetPosition(hTVC, 0));
-    SL_receiver_y->setValue(tvconv_getTargetPosition(hTVC, 1));
-    SL_receiver_z->setValue(tvconv_getTargetPosition(hTVC, 2));
+    SL_receiver_x->setValue(mcfxConv_getTargetPosition(hTVC, 0));
+    SL_receiver_y->setValue(mcfxConv_getTargetPosition(hTVC, 1));
+    SL_receiver_z->setValue(mcfxConv_getTargetPosition(hTVC, 2));
 
     /* display warning message, if needed */
-    if((tvconv_getNumIRs(hTVC) != 0) && (tvconv_getHostFs(hTVC)!=tvconv_getIRFs(hTVC))){
-        if (tvconv_getResampledIR(hTVC))
+    if((mcfxConv_getNumIRs(hTVC) != 0) && (mcfxConv_getHostFs(hTVC)!=mcfxConv_getIRFs(hTVC))){
+        if (mcfxConv_getResampledIR(hTVC))
             currentWarning = k_warning_irs_resampled;
         else
             currentWarning = k_warning_sampleRate_missmatch;
         repaint(0,0,getWidth(),32);
     }
-    else if(tvconv_getNumInputChannels(hTVC)>MAX_NUM_CHANNELS){
+    else if(mcfxConv_getNumInputChannels(hTVC)>MAX_NUM_CHANNELS){
         currentWarning = k_warning_nInputs_more_than_64;
         repaint(0,0,getWidth(),32);
     }
-    else if(tvconv_getNumOutputChannels(hTVC)>MAX_NUM_CHANNELS){
+    else if(mcfxConv_getNumOutputChannels(hTVC)>MAX_NUM_CHANNELS){
         currentWarning = k_warning_nOutputs_more_than_64;
         repaint(0,0,getWidth(),32);
     }
@@ -1626,7 +1626,7 @@ void PluginEditor::timerCallback()
         repaint(0,0,getWidth(),32);
     }
 
-    tvConvError = tvconv_getSofaErrorState(hTVC);
+    mcfxConvError = mcfxConv_getSofaErrorState(hTVC);
     repaint(136, 45, 264, 11);
 
     if (refreshSceneViewWindow == true)
@@ -1679,62 +1679,62 @@ void PluginEditor::updateCrossfadeRange() {
 void PluginEditor::refreshCoords()
 {
     // Get receiver position data from convolver and update slider X
-    if (tvconv_getMaxDimension(hTVC, 0) > tvconv_getMinDimension(hTVC, 0))
+    if (mcfxConv_getMaxDimension(hTVC, 0) > mcfxConv_getMinDimension(hTVC, 0))
     {
         SL_receiver_x->setEnabled(true);
-        SL_receiver_x->setRange(tvconv_getMinDimension(hTVC, 0),
-                                tvconv_getMaxDimension(hTVC, 0),
+        SL_receiver_x->setRange(mcfxConv_getMinDimension(hTVC, 0),
+                                mcfxConv_getMaxDimension(hTVC, 0),
                                 0.001);
     }
     else
     {
         SL_receiver_x->setEnabled(false);
     }
-    SL_receiver_x->setValue(tvconv_getTargetPosition(hTVC, 0));
+    SL_receiver_x->setValue(mcfxConv_getTargetPosition(hTVC, 0));
 
     // Get receiver position data from convolver and update slider Y
-    if (tvconv_getMaxDimension(hTVC, 1) > tvconv_getMinDimension(hTVC, 1)){
+    if (mcfxConv_getMaxDimension(hTVC, 1) > mcfxConv_getMinDimension(hTVC, 1)){
         SL_receiver_y->setEnabled(true);
-        SL_receiver_y->setRange(tvconv_getMinDimension(hTVC, 1),
-                                tvconv_getMaxDimension(hTVC, 1),
+        SL_receiver_y->setRange(mcfxConv_getMinDimension(hTVC, 1),
+                                mcfxConv_getMaxDimension(hTVC, 1),
                                 0.001);
     } else {
         SL_receiver_y->setEnabled(false);
     }
-    SL_receiver_y->setValue(tvconv_getTargetPosition(hTVC, 1));
+    SL_receiver_y->setValue(mcfxConv_getTargetPosition(hTVC, 1));
 
     // Get receiver position data from convolver and update slider Z
-    if (tvconv_getMaxDimension(hTVC, 2) > tvconv_getMinDimension(hTVC, 2)){
+    if (mcfxConv_getMaxDimension(hTVC, 2) > mcfxConv_getMinDimension(hTVC, 2)){
         SL_receiver_z->setEnabled(true);
-        SL_receiver_z->setRange(tvconv_getMinDimension(hTVC, 2),
-                                tvconv_getMaxDimension(hTVC, 2),
+        SL_receiver_z->setRange(mcfxConv_getMinDimension(hTVC, 2),
+                                mcfxConv_getMaxDimension(hTVC, 2),
                                 0.001);
     } else {
         SL_receiver_z->setEnabled(false);
     }
-    SL_receiver_z->setValue(tvconv_getTargetPosition(hTVC, 2));
+    SL_receiver_z->setValue(mcfxConv_getTargetPosition(hTVC, 2));
 
 
     // Get SOURCE position data from convolver and update sliders (XYZ)
 
-    //float sourcePosition = tvconv_getSourcePosition(hTVC, 0);
+    //float sourcePosition = mcfxConv_getSourcePosition(hTVC, 0);
 
-    SL_source_x->setRange(tvconv_getSourcePosition(hTVC, 0), tvconv_getSourcePosition(hTVC, 0)+1, 0.1);
-    SL_source_x->setValue(tvconv_getSourcePosition(hTVC, 0));
-    SL_source_y->setRange(tvconv_getSourcePosition(hTVC, 1), tvconv_getSourcePosition(hTVC, 1)+1, 0.1);
-    SL_source_y->setValue(tvconv_getSourcePosition(hTVC, 1));
-    SL_source_z->setRange(tvconv_getSourcePosition(hTVC, 2), tvconv_getSourcePosition(hTVC, 2)+1, 0.1);
-    SL_source_z->setValue(tvconv_getSourcePosition(hTVC, 2));
+    SL_source_x->setRange(mcfxConv_getSourcePosition(hTVC, 0), mcfxConv_getSourcePosition(hTVC, 0)+1, 0.1);
+    SL_source_x->setValue(mcfxConv_getSourcePosition(hTVC, 0));
+    SL_source_y->setRange(mcfxConv_getSourcePosition(hTVC, 1), mcfxConv_getSourcePosition(hTVC, 1)+1, 0.1);
+    SL_source_y->setValue(mcfxConv_getSourcePosition(hTVC, 1));
+    SL_source_z->setRange(mcfxConv_getSourcePosition(hTVC, 2), mcfxConv_getSourcePosition(hTVC, 2)+1, 0.1);
+    SL_source_z->setValue(mcfxConv_getSourcePosition(hTVC, 2));
 
 	// Notify the host about the room size
 	hVst->room_size_x->beginChangeGesture();
-	hVst->room_size_x->setValueNotifyingHost(tvconv_getMaxDimension(hTVC, 0) - tvconv_getMinDimension(hTVC, 0));
+	hVst->room_size_x->setValueNotifyingHost(mcfxConv_getMaxDimension(hTVC, 0) - mcfxConv_getMinDimension(hTVC, 0));
 	hVst->room_size_x->endChangeGesture();
 	hVst->room_size_y->beginChangeGesture();
-	hVst->room_size_y->setValueNotifyingHost(tvconv_getMaxDimension(hTVC, 1) - tvconv_getMinDimension(hTVC, 1));
+	hVst->room_size_y->setValueNotifyingHost(mcfxConv_getMaxDimension(hTVC, 1) - mcfxConv_getMinDimension(hTVC, 1));
 	hVst->room_size_y->endChangeGesture();
 	hVst->room_size_z->beginChangeGesture();
-	hVst->room_size_z->setValueNotifyingHost(tvconv_getMaxDimension(hTVC, 2) - tvconv_getMinDimension(hTVC, 2));
+	hVst->room_size_z->setValueNotifyingHost(mcfxConv_getMaxDimension(hTVC, 2) - mcfxConv_getMinDimension(hTVC, 2));
 	hVst->room_size_z->endChangeGesture();
 }
 

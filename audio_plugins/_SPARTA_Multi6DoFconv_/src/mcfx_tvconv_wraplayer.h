@@ -93,21 +93,21 @@ extern "C" {
 /** SOFA loader error codes */
 typedef enum {
     /** Not initialized */
-    SAF_TVCONV_NOT_INIT,
+    SAF_MCFX_NOT_INIT,
     /** Loading file */
-    SAF_TVCONV_SOFA_LOADING,
+    SAF_MCFX_SOFA_LOADING,
     /** None of the error checks failed */
-    SAF_TVCONV_SOFA_OK,
+    SAF_MCFX_SOFA_OK,
     /** Not a SOFA file, or no such file was found in the specified location */
-    SAF_TVCONV_SOFA_ERROR_INVALID_FILE_OR_FILE_PATH,
+    SAF_MCFX_SOFA_ERROR_INVALID_FILE_OR_FILE_PATH,
     /** Dimensions of the SOFA data were not as expected */
-    SAF_TVCONV_SOFA_ERROR_DIMENSIONS_UNEXPECTED,
+    SAF_MCFX_SOFA_ERROR_DIMENSIONS_UNEXPECTED,
     /** The data-type of the SOFA data was not as expected */
-    SAF_TVCONV_SOFA_ERROR_FORMAT_UNEXPECTED,
+    SAF_MCFX_SOFA_ERROR_FORMAT_UNEXPECTED,
     /** NetCDF is not thread safe! */
-    SAF_TVCONV_SOFA_ERROR_NETCDF_IN_USE
+    SAF_MCFX_SOFA_ERROR_NETCDF_IN_USE
 
-} SAF_TVCONV_ERROR_CODES;
+} SAF_MCFX_ERROR_CODES;
 
 /* ========================================================================== */
 /*                               Main Functions                               */
@@ -118,14 +118,14 @@ typedef enum {
  *
  * @param[in] phMcfxConv (&) address of McfxConv handle
  */
-void tvconv_create(void** const phMcfxConv);
+void mcfxWrapper_create(void** const phMcfxConv);
 
 /**
  * Destroys an instance of McfxConv
  *
  * @param[in] phMcfxConv (&) address of McfxConv handle
  */
-void tvconv_destroy(void** const phMcfxConv);
+void mcfxWrapper_destroy(void** const phMcfxConv);
 
 /**
  * Initialises an instance of McfxConv with default settings
@@ -134,7 +134,7 @@ void tvconv_destroy(void** const phMcfxConv);
  * @param[in] samplerate    Host samplerate.
  * @param[in] hostBlockSize Host frame/block size
  */
-void tvconv_init(void* const hMcfxConv,
+void mcfxWrapper_init(void* const hMcfxConv,
                  int samplerate,
                  int hostBlockSize);
 
@@ -152,21 +152,21 @@ void mcfxConv_process(void* const hMcfxConv,
  * Sets all intialisation flags to 1. Re-initialising all settings/variables,
  * as McfxConv is currently configured, at next available opportunity.
  */
-void tvconv_refreshParams(void* const hMcfxConv);
+void mcfxConv_refreshParams(void* const hMcfxConv);
 
 /**
  * Checks whether things have to be reinitialised, and does so if it is needed
  */
-void tvconv_checkReInit(void* const hMcfxConv);
+void mcfxConv_checkReInit(void* const hMcfxConv);
 
 /** Reads IRs and positions from the current sofa file path. */
-void tvconv_setFiltersAndPositions(void* const hMcfxConv);
+void mcfxConv_setFiltersAndPositions(void* const hMcfxConv);
 
 /** Sets current sofa file path. */
-void tvconv_setSofaFilePath(void* const hMcfxConv, const char* path);
+void mcfxConv_setSofaFilePath(void* const hMcfxConv, const char* path);
 
 /** Asks the MCFX engine to reinitialise the convolver, required after  */
-void tvconv_reinitConvolver(void* const hMcfxConv);
+void mcfxConv_reinitConvolver(void* const hMcfxConv);
 
 /**
  *  Sets the target listener position.
@@ -175,7 +175,7 @@ void tvconv_reinitConvolver(void* const hMcfxConv);
  *  *                   and 2 is z).
  *  @param[in] position new position to be set.
  */
-void tvconv_setTargetPosition(void* const hMcfxConv, float position, int dim);
+void mcfxConv_setTargetPosition(void* const hMcfxConv, float position, int dim);
 
 /* ========================================================================== */
 /*                                Get Functions                               */
@@ -185,67 +185,67 @@ void tvconv_setTargetPosition(void* const hMcfxConv, float position, int dim);
  * Returns the processing framesize (i.e., number of samples processed with
  * every _process() call )
  */
-int tvconv_getFrameSize(void);
+int mcfxConv_getFrameSize(void);
 
 /** Returns the number input channels */
-int tvconv_getNumInputChannels(void* const hMcfxConv);
+int mcfxConv_getNumInputChannels(void* const hMcfxConv);
 
 /** Returns the number of output channels (the same as the number of channels in the loaded sofa file) */
-int tvconv_getNumOutputChannels(void* const hMcfxConv);
+int mcfxConv_getNumOutputChannels(void* const hMcfxConv);
 
 /** Returns the currect host block size */
-int tvconv_getHostBlockSize(void* const hMcfxConv);
+int mcfxConv_getHostBlockSize(void* const hMcfxConv);
 
 /** Returns the number of IR channels in the loaded sofa file */
-int tvconv_getNumIRs(void* const hMcfxConv);
+int mcfxConv_getNumIRs(void* const hMcfxConv);
 
 /** Returns the number of listener positions in the loaded sofa file */
-int tvconv_getNumListenerPositions(void* const hMcfxConv);
+int mcfxConv_getNumListenerPositions(void* const hMcfxConv);
 
 /** Returns the current coordinate of dimension dim  (0 ... NUM_DIMENSIONS-1) */
-float tvconv_getListenerPosition(void* const hMcfxConv, int index, int dim);
+float mcfxConv_getListenerPosition(void* const hMcfxConv, int index, int dim);
 
 /** Returns the index of the current IR position */
-int tvconv_getListenerPositionIdx(void* const hMcfxConv);
+int mcfxConv_getListenerPositionIdx(void* const hMcfxConv);
 
 /** Returns the current coordinate of dimension dim  (0 ... NUM_DIMENSIONS-1) */
-float tvconv_getTargetPosition(void* const hMcfxConv, int dim);
+float mcfxConv_getTargetPosition(void* const hMcfxConv, int dim);
 
 /** Returns the source coordinate of dimension dim  (0 ... NUM_DIMENSIONS-1) */
-float tvconv_getSourcePosition(void* const hMcfxConv, int dim);
+float mcfxConv_getSourcePosition(void* const hMcfxConv, int dim);
 
 /** Returns minimum cooridinate of dimension dim (0 ... NUM_DIMENSIONS-1) */
-float tvconv_getMinDimension(void* const hMcfxConv, int dim);
+float mcfxConv_getMinDimension(void* const hMcfxConv, int dim);
 
 /** Returns minimum cooridinate of dimension dim  (0 ... NUM_DIMENSIONS-1) */
-float tvconv_getMaxDimension(void* const hMcfxConv, int dim);
+float mcfxConv_getMaxDimension(void* const hMcfxConv, int dim);
 
 /** Returns the current filter length, in samples */
-int tvconv_getIRLength(void* const hMcfxConv);
+int mcfxConv_getIRLength(void* const hMcfxConv);
 
 /** Returns the longest partition size used by MCFX with the current filters, 0 if none are loaded */
 int mcfxConv_getLongestPartSize(void* const hMcfxConv);
 
 /** Returns the samplerate of the loaded filters  */
-int tvconv_getIRFs(void* const hMcfxConv);
+int mcfxConv_getIRFs(void* const hMcfxConv);
 
 /* Returns true if the MCFX engine had to resample IRs to match the host samplerate */
-int tvconv_getResampledIR(void* const hMcfxConv);
+int mcfxConv_getResampledIR(void* const hMcfxConv);
 
 /** Returns the samperate of the host */
-int tvconv_getHostFs(void* const hMcfxConv);
+int mcfxConv_getHostFs(void* const hMcfxConv);
 
 /** Returns the processing delay in samples (may be used for delay compensation features) */
-int tvconv_getProcessingDelay(void* const hMcfxConv);
+int mcfxConv_getProcessingDelay(void* const hMcfxConv);
 
 /** Returns the current Sofa file path */
-char* tvconv_getSofaFilePath(void* const hMcfxConv);
+char* mcfxConv_getSofaFilePath(void* const hMcfxConv);
 
 /** Returns the current Sofa file error state */
-SAF_TVCONV_ERROR_CODES tvconv_getSofaErrorState(void* const hMcfxConv);
+SAF_MCFX_ERROR_CODES mcfxConv_getSofaErrorState(void* const hMcfxConv);
 
 /** Returns current codec status (see #CODEC_STATUS enum) */
-CODEC_STATUS tvconv_getCodecStatus(void* const hMcfxConv);
+CODEC_STATUS mcfxConv_getCodecStatus(void* const hMcfxConv);
 
 /** Returns the number of skipped processing cycles */
 int mcfxConv_getSkippedCyclesCount(void* const hMcfxConv);
@@ -282,8 +282,8 @@ unsigned int mcfxConv_getCrossfadeTime_samples(void* const hMcfxConv);
 #endif
 
 #if (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
-void mcfxConv_DoubleCrossfadeTime(void* const hMcfxConv, bool* maxReached);
-void mcfxConv_HalveCrossfadeTime(void* const hMcfxConv, bool* minReached);
+void mcfxConv_doubleCrossfadeTime(void* const hMcfxConv, bool* maxReached);
+void mcfxConv_halveCrossfadeTime(void* const hMcfxConv, bool* minReached);
 
 void mcfxConv_setCrossfadeTime_samples(void* const hMcfxConv, unsigned int crossfadeTime_samples);
 void mcfxConv_setCrossfadeTime_s(void* const hMcfxConv, float crossfadeTime_s);

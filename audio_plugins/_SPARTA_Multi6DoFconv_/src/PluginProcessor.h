@@ -54,7 +54,7 @@ class PluginProcessor  : public AudioProcessor,
 {
 public:
     /* Set/Get functions */
-    void* getFXHandle() { return hTVCnv; }
+    void* getFXHandle() { return hMCFXCnv; }
     void* getFXHandle_rot() { return hRot; }
     int getCurrentBlockSize(){ return nHostBlockSize; }
     int getCurrentNumInputs(){ return nNumInputs; }
@@ -89,7 +89,7 @@ public:
     
     
 private:
-    void* hTVCnv;         /* tvconv handle */
+    void* hMCFXCnv;         /* MCFX wrapper handle */
     void* hRot;           /* rotator handle */
     int nNumInputs;       /* current number of input channels */
     int nNumOutputs;      /* current number of output channels */

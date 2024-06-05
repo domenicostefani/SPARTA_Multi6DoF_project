@@ -149,14 +149,14 @@ private:
 
     /* sofa loading */
     std::unique_ptr<juce::FilenameComponent> fileComp;
-    SAF_TVCONV_ERROR_CODES tvConvError;
+    SAF_MCFX_ERROR_CODES mcfxConvError;
 
     /* sofa file loading */
      void filenameComponentChanged (FilenameComponent*) override  {
          partitionComboboxesSet = false;
          String directory = fileComp->getCurrentFile().getFullPathName();
          const char* new_cstring = (const char*)directory.toUTF8();
-         tvconv_setSofaFilePath(hTVC, new_cstring);
+         mcfxConv_setSofaFilePath(hTVC, new_cstring);
          refreshCoords();
 
      }

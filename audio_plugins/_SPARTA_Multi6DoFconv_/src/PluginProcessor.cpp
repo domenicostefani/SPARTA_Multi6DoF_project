@@ -17,7 +17,7 @@ PluginProcessor::PluginProcessor() :
 {
     nSampleRate = 48000;
     nHostBlockSize = -1;
-    tvconv_create(&hTVCnv);
+    mcfxWrapper_create(&hMCFXCnv);
     
     // (@todo) to be automated
     enable_rotation = true;
@@ -129,7 +129,7 @@ PluginProcessor::~PluginProcessor()
 {
     osc.disconnect();
     osc.removeListener(this);
-    tvconv_destroy(&hTVCnv);
+    mcfxWrapper_destroy(&hMCFXCnv);
 }
 
 //==============================================================================
@@ -275,23 +275,23 @@ float PluginProcessor::getParameter(int index)
 {
     if (index < 3) 
     {
-        if (tvconv_getMaxDimension(hTVCnv, index) > tvconv_getMinDimension(hTVCnv, index))
+        if (mcfxConv_getMaxDimension(hMCFXCnv, index) > mcfxConv_getMinDimension(hMCFXCnv, index))
         {
-            return (tvconv_getTargetPosition(hTVCnv, index)-tvconv_getMinDimension(hTVCnv, index))/
-                (tvconv_getMaxDimension(hTVCnv, index)-tvconv_getMinDimension(hTVCnv, index));
+            return (mcfxConv_getTargetPosition(hMCFXCnv, index)-mcfxConv_getMinDimension(hMCFXCnv, index))/
+                (mcfxConv_getMaxDimension(hMCFXCnv, index)-mcfxConv_getMinDimension(hMCFXCnv, index));
         }
     }
     if (index == k_room_size_x)
     {
-        return (tvconv_getMaxDimension(hTVCnv, 0) - tvconv_getMinDimension(hTVCnv, 0));
+        return (mcfxConv_getMaxDimension(hMCFXCnv, 0) - mcfxConv_getMinDimension(hMCFXCnv, 0));
     }
     if (index == k_room_size_y)
     {
-        return (tvconv_getMaxDimension(hTVCnv, 1) - tvconv_getMinDimension(hTVCnv, 1));
+        return (mcfxConv_getMaxDimension(hMCFXCnv, 1) - mcfxConv_getMinDimension(hMCFXCnv, 1));
     }
     if (index == k_room_size_z)
     {
-        return (tvconv_getMaxDimension(hTVCnv, 2) - tvconv_getMinDimension(hTVCnv, 2));
+        return (mcfxConv_getMaxDimension(hMCFXCnv, 2) - mcfxConv_getMinDimension(hMCFXCnv, 2));
     }
 
     // otherwise
@@ -323,7 +323,7 @@ const String PluginProcessor::getParameterName (int index)
 const String PluginProcessor::getParameterText(int index)
 {
     if (index < 3) {
-        return String(tvconv_getTargetPosition(hTVCnv, index));
+        return String(mcfxConv_getTargetPosition(hMCFXCnv, index));
     }
     else return "NULL";
 }
@@ -336,10 +336,10 @@ void PluginProcessor::setParameter (int index, float newValue)
     float newValueScaled;
     if (index < 3) {
         newValueScaled = newValue *
-        (tvconv_getMaxDimension(hTVCnv, index) - tvconv_getMinDimension(hTVCnv, index)) +
-        tvconv_getMinDimension(hTVCnv, index);
-        if (newValueScaled != tvconv_getTargetPosition(hTVCnv, index)){
-            tvconv_setTargetPosition(hTVCnv, newValueScaled, index);
+        (mcfxConv_getMaxDimension(hMCFXCnv, index) - mcfxConv_getMinDimension(hMCFXCnv, index)) +
+        mcfxConv_getMinDimension(hMCFXCnv, index);
+        if (newValueScaled != mcfxConv_getTargetPosition(hMCFXCnv, index)){
+            mcfxConv_setTargetPosition(hMCFXCnv, newValueScaled, index);
             refreshWindow = true;
         }
     }
@@ -385,8 +385,8 @@ void PluginProcessor::setParameter (int index, float newValue)
 void PluginProcessor::setParameterRaw(int index, float newValue)
 {
     if (index < 3) {
-        if (newValue != tvconv_getTargetPosition(hTVCnv, index)) {
-            tvconv_setTargetPosition(hTVCnv, newValue, index);
+        if (newValue != mcfxConv_getTargetPosition(hMCFXCnv, index)) {
+            mcfxConv_setTargetPosition(hMCFXCnv, newValue, index);
             refreshWindow = true;
         }
     }
@@ -402,9 +402,9 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     nSampleRate = (int)(sampleRate + 0.5);
     //isPlaying = false;
 
-    tvconv_init(hTVCnv, nSampleRate, nHostBlockSize);
+    mcfxWrapper_init(hMCFXCnv, nSampleRate, nHostBlockSize);
 
-    int numConvolverOutputChannels = tvconv_getNumOutputChannels(hTVCnv);
+    int numConvolverOutputChannels = mcfxConv_getNumOutputChannels(hMCFXCnv);
 
     if (numConvolverOutputChannels) {
         
@@ -415,7 +415,7 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         rotator_setOrder(hRot, sh_order);
     }
 
-    AudioProcessor::setLatencySamples(tvconv_getProcessingDelay(hTVCnv));
+    AudioProcessor::setLatencySamples(mcfxConv_getProcessingDelay(hMCFXCnv));
     rotator_init(hRot, (float)sampleRate);
 }
 
@@ -454,7 +454,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     int nCurrentBlockSize = nHostBlockSize = buffer.getNumSamples();
     nNumInputs = jmin(getTotalNumInputChannels(), buffer.getNumChannels());
     nNumOutputs = jmin(getTotalNumOutputChannels(), buffer.getNumChannels());
-    mcfxConv_process(hTVCnv, buffer, nNumInputs, nNumOutputs);
+    mcfxConv_process(hMCFXCnv, buffer, nNumInputs, nNumOutputs);
 
     float** bufferData = buffer.getArrayOfWritePointers();
 
@@ -496,16 +496,16 @@ void PluginProcessor::getStateInformation (juce::MemoryBlock& destData)
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
     /* Create an outer XML element.. */
-    XmlElement xml("TVCONVAUDIOPLUGINSETTINGS");
-    xml.setAttribute("LastSofaFilePath", tvconv_getSofaFilePath(hTVCnv));
-    xml.setAttribute("ReceiverX", tvconv_getTargetPosition(hTVCnv, 0));
-    xml.setAttribute("ReceiverY", tvconv_getTargetPosition(hTVCnv, 1));
-    xml.setAttribute("ReceiverZ", tvconv_getTargetPosition(hTVCnv, 2));
+    XmlElement xml("SAFMCFXAUDIOPLUGINSETTINGS");
+    xml.setAttribute("LastSofaFilePath", mcfxConv_getSofaFilePath(hMCFXCnv));
+    xml.setAttribute("ReceiverX", mcfxConv_getTargetPosition(hMCFXCnv, 0));
+    xml.setAttribute("ReceiverY", mcfxConv_getTargetPosition(hMCFXCnv, 1));
+    xml.setAttribute("ReceiverZ", mcfxConv_getTargetPosition(hMCFXCnv, 2));
 
     xml.setAttribute("OSC_PORT", osc_port_ID);
 
-    xml.setAttribute("ConvBufferSize", (int)mcfxConv_getConvBufferSize(hTVCnv));
-    xml.setAttribute("MaxPartSize", (int)mcfxConv_getMaxPartitionSize(hTVCnv));
+    xml.setAttribute("ConvBufferSize", (int)mcfxConv_getConvBufferSize(hMCFXCnv));
+    xml.setAttribute("MaxPartSize", (int)mcfxConv_getMaxPartitionSize(hMCFXCnv));
 
     copyXmlToBinary(xml, destData);
 }
@@ -518,20 +518,20 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes) {
 
     if (xmlState != nullptr) {
         /* make sure that it's actually the correct XML object */
-        if (xmlState->hasTagName("TVCONVAUDIOPLUGINSETTINGS")) {
+        if (xmlState->hasTagName("SAFMCFXAUDIOPLUGINSETTINGS")) {
             if (xmlState->hasAttribute("LastSofaFilePath")) {
                 String directory = xmlState->getStringAttribute("LastSofaFilePath", "no_file");
                 const char* new_cstring = (const char*)directory.toUTF8();
-                tvconv_setSofaFilePath(hTVCnv, new_cstring);
+                mcfxConv_setSofaFilePath(hMCFXCnv, new_cstring);
             }
             if (xmlState->hasAttribute("ReceiverX")) {
-                tvconv_setTargetPosition(hTVCnv, (float)xmlState->getDoubleAttribute("ReceiverX"), 0);
+                mcfxConv_setTargetPosition(hMCFXCnv, (float)xmlState->getDoubleAttribute("ReceiverX"), 0);
             }
             if (xmlState->hasAttribute("ReceiverY")) {
-                tvconv_setTargetPosition(hTVCnv, (float)xmlState->getDoubleAttribute("ReceiverY"), 1);
+                mcfxConv_setTargetPosition(hMCFXCnv, (float)xmlState->getDoubleAttribute("ReceiverY"), 1);
             }
             if (xmlState->hasAttribute("ReceiverZ")) {
-                tvconv_setTargetPosition(hTVCnv, (float)xmlState->getDoubleAttribute("ReceiverZ"), 2);
+                mcfxConv_setTargetPosition(hMCFXCnv, (float)xmlState->getDoubleAttribute("ReceiverZ"), 2);
             }
 
             if (xmlState->hasAttribute("OSC_PORT")) {
@@ -540,28 +540,28 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes) {
             }
 
             if (xmlState->hasAttribute("ConvBufferSize")) {
-                mcfxConv_setConvBufferSize(hTVCnv, xmlState->getIntAttribute("ConvBufferSize", 0));
+                mcfxConv_setConvBufferSize(hMCFXCnv, xmlState->getIntAttribute("ConvBufferSize", 0));
             }
 
             if (xmlState->hasAttribute("MaxPartSize")) {
-                mcfxConv_setMaxPartitionSize(hTVCnv, xmlState->getIntAttribute("MaxPartSize", 0));
+                mcfxConv_setMaxPartitionSize(hMCFXCnv, xmlState->getIntAttribute("MaxPartSize", 0));
             }
 
             if (xmlState->hasAttribute("TBRotFlag")) {
                 DBG("flag set");
             }
 
-            tvconv_refreshParams(hTVCnv);
+            mcfxConv_refreshParams(hMCFXCnv);
 
             // Notify the host about the room size
             room_size_x->beginChangeGesture();
-            room_size_x->setValueNotifyingHost(tvconv_getMaxDimension(hTVCnv, 0) - tvconv_getMinDimension(hTVCnv, 0));
+            room_size_x->setValueNotifyingHost(mcfxConv_getMaxDimension(hMCFXCnv, 0) - mcfxConv_getMinDimension(hMCFXCnv, 0));
             room_size_x->endChangeGesture();
             room_size_y->beginChangeGesture();
-            room_size_y->setValueNotifyingHost(tvconv_getMaxDimension(hTVCnv, 1) - tvconv_getMinDimension(hTVCnv, 1));
+            room_size_y->setValueNotifyingHost(mcfxConv_getMaxDimension(hMCFXCnv, 1) - mcfxConv_getMinDimension(hMCFXCnv, 1));
             room_size_y->endChangeGesture();
             room_size_z->beginChangeGesture();
-            room_size_z->setValueNotifyingHost(tvconv_getMaxDimension(hTVCnv, 2) - tvconv_getMinDimension(hTVCnv, 2));
+            room_size_z->setValueNotifyingHost(mcfxConv_getMaxDimension(hMCFXCnv, 2) - mcfxConv_getMinDimension(hMCFXCnv, 2));
             room_size_z->endChangeGesture();
         }
     }

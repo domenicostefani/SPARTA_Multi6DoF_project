@@ -172,10 +172,10 @@ void sceneView::paint (juce::Graphics& g)
     g.drawText( yAxisLabel, view_x + room_dims_pixels_o[xp_idx] + 20.0f, view_y+room_dims_pixels_o[yp_idx]/2.0f-5.0f, 20, 10, Justification::centred, true);
 
     /* Listener icons */
-    int targetIndex = tvconv_getListenerPositionIdx(hTVCnv);
-    for(int i=0; i<tvconv_getNumListenerPositions(hTVCnv); i++){
-        float point_x = view_x + room_dims_pixels_o[xp_idx] - scale*(tvconv_getListenerPosition(hTVCnv, i, xp_idx/*Y*/) - room_offset_m[xp_idx]);
-        float point_y = view_y + room_dims_pixels_o[yp_idx] - scale*(tvconv_getListenerPosition(hTVCnv, i, yp_idx/*X or Z*/) - room_offset_m[yp_idx]);
+    int targetIndex = mcfxConv_getListenerPositionIdx(hTVCnv);
+    for(int i=0; i<mcfxConv_getNumListenerPositions(hTVCnv); i++){
+        float point_x = view_x + room_dims_pixels_o[xp_idx] - scale*(mcfxConv_getListenerPosition(hTVCnv, i, xp_idx/*Y*/) - room_offset_m[xp_idx]);
+        float point_y = view_y + room_dims_pixels_o[yp_idx] - scale*(mcfxConv_getListenerPosition(hTVCnv, i, yp_idx/*X or Z*/) - room_offset_m[yp_idx]);
         if(i==targetIndex){
             lstIcon.setBounds(point_x-iconRadius*1.8f, point_y-iconRadius*1.8f, iconWidth*1.8f, iconWidth*1.8f);
             g.setColour(Colours::white);
@@ -198,8 +198,8 @@ void sceneView::paint (juce::Graphics& g)
     }
 
     /* Source icon */
-    float point_x = view_x + room_dims_pixels_o[xp_idx] - scale*(tvconv_getSourcePosition(hTVCnv, xp_idx/*Y*/) - room_offset_m[xp_idx]);
-    float point_y = view_y + room_dims_pixels_o[yp_idx] - scale*(tvconv_getSourcePosition(hTVCnv, yp_idx/*X or Z*/) - room_offset_m[yp_idx]);
+    float point_x = view_x + room_dims_pixels_o[xp_idx] - scale*(mcfxConv_getSourcePosition(hTVCnv, xp_idx/*Y*/) - room_offset_m[xp_idx]);
+    float point_y = view_y + room_dims_pixels_o[yp_idx] - scale*(mcfxConv_getSourcePosition(hTVCnv, yp_idx/*X or Z*/) - room_offset_m[yp_idx]);
     lstIcon.setBounds(point_x-iconRadius*1.2f, point_y-iconRadius*1.2f, iconWidth*1.2f, iconWidth*1.2f);
     g.setOpacity(0.9f);
     g.setColour(Colours::magenta);
@@ -208,8 +208,8 @@ void sceneView::paint (juce::Graphics& g)
     g.drawEllipse(lstIcon, 1.0f);
 
     /* Target Listener position */
-    point_x = view_x + room_dims_pixels_o[xp_idx] - scale*(tvconv_getTargetPosition(hTVCnv, xp_idx/*Y*/) - room_offset_m[xp_idx]);
-    point_y = view_y + room_dims_pixels_o[yp_idx] - scale*(tvconv_getTargetPosition(hTVCnv, yp_idx /*X or Z*/) - room_offset_m[yp_idx]);
+    point_x = view_x + room_dims_pixels_o[xp_idx] - scale*(mcfxConv_getTargetPosition(hTVCnv, xp_idx/*Y*/) - room_offset_m[xp_idx]);
+    point_y = view_y + room_dims_pixels_o[yp_idx] - scale*(mcfxConv_getTargetPosition(hTVCnv, yp_idx /*X or Z*/) - room_offset_m[yp_idx]);
     lstIcon.setBounds(point_x-iconRadius*1.2f, point_y-iconRadius*1.2f, iconWidth*1.2f, iconWidth*1.2f);
     g.setOpacity(0.9f);
     g.setColour(Colours::orange);
@@ -247,8 +247,8 @@ void sceneView::mouseDown (const juce::MouseEvent& e)
         yp_idx = 2;  /* Z */
     }
 
-    float point_x = view_x + room_dims_pixels_o[xp_idx] - scale * (tvconv_getTargetPosition(hTVCnv, xp_idx) - room_offset_m[xp_idx]);
-    float point_y = view_y + room_dims_pixels_o[yp_idx] - scale * (tvconv_getTargetPosition(hTVCnv, yp_idx) - room_offset_m[yp_idx]);
+    float point_x = view_x + room_dims_pixels_o[xp_idx] - scale * (mcfxConv_getTargetPosition(hTVCnv, xp_idx) - room_offset_m[xp_idx]);
+    float point_y = view_y + room_dims_pixels_o[yp_idx] - scale * (mcfxConv_getTargetPosition(hTVCnv, yp_idx) - room_offset_m[yp_idx]);
     recIcon.setBounds(point_x - iconRadius, point_y - iconRadius, iconWidth, iconWidth);
     if (recIcon.expanded(4, 4).contains(e.getMouseDownPosition())) {
         targetIconIsClicked = true;
@@ -279,8 +279,8 @@ void sceneView::mouseDrag (const juce::MouseEvent& e)
         computeRoomDims();
 
         point.setXY((float)e.getPosition().getX() - 2, (float)e.getPosition().getY() - 2);
-        tvconv_setTargetPosition(hTVCnv, -(point.getX() - view_x - room_dims_pixels_o[xp_idx]) / scale + room_offset_m[xp_idx], xp_idx);
-        tvconv_setTargetPosition(hTVCnv, -(point.getY() - view_y - room_dims_pixels_o[yp_idx]) / scale + room_offset_m[yp_idx], yp_idx);
+        mcfxConv_setTargetPosition(hTVCnv, -(point.getX() - view_x - room_dims_pixels_o[xp_idx]) / scale + room_offset_m[xp_idx], xp_idx);
+        mcfxConv_setTargetPosition(hTVCnv, -(point.getY() - view_y - room_dims_pixels_o[yp_idx]) / scale + room_offset_m[yp_idx], yp_idx);
 
     }
 
@@ -302,18 +302,18 @@ void sceneView::mouseUp (const juce::MouseEvent& e)
 void sceneView::computeRoomDims()
 {
 
-if (tvconv_getNumListenerPositions(hTVCnv) == 0) {
+if (mcfxConv_getNumListenerPositions(hTVCnv) == 0) {
     room_dims_m[0] = room_dims_m[1] = 1.0f;
     room_dims_m[2] = 0.35f;
     room_offset_m[0] = room_offset_m[1] = room_offset_m[2] = 0.0f;
 }
 else {
-    room_dims_m[0] = MAX(MAX(tvconv_getMaxDimension(hTVCnv, 0), tvconv_getSourcePosition(hTVCnv, 0)), 0.01f) * 1.2f;
-    room_dims_m[1] = MAX(MAX(tvconv_getMaxDimension(hTVCnv, 1), tvconv_getSourcePosition(hTVCnv, 1)), 0.01f) * 1.2f;
-    room_dims_m[2] = MAX(MAX(tvconv_getMaxDimension(hTVCnv, 2), tvconv_getSourcePosition(hTVCnv, 2)), 0.003f) * 1.2f;
-    room_offset_m[0] = floorf(MIN(tvconv_getMinDimension(hTVCnv, 0), tvconv_getSourcePosition(hTVCnv, 0)) * 0.8f * 10.0f) / 10.0f;
-    room_offset_m[1] = floorf(MIN(tvconv_getMinDimension(hTVCnv, 1), tvconv_getSourcePosition(hTVCnv, 1)) * 0.8f * 10.0f) / 10.0f;
-    room_offset_m[2] = floorf(MIN(tvconv_getMinDimension(hTVCnv, 2), tvconv_getSourcePosition(hTVCnv, 2)) * 0.8f * 10.0f) / 10.0f;
+    room_dims_m[0] = MAX(MAX(mcfxConv_getMaxDimension(hTVCnv, 0), mcfxConv_getSourcePosition(hTVCnv, 0)), 0.01f) * 1.2f;
+    room_dims_m[1] = MAX(MAX(mcfxConv_getMaxDimension(hTVCnv, 1), mcfxConv_getSourcePosition(hTVCnv, 1)), 0.01f) * 1.2f;
+    room_dims_m[2] = MAX(MAX(mcfxConv_getMaxDimension(hTVCnv, 2), mcfxConv_getSourcePosition(hTVCnv, 2)), 0.003f) * 1.2f;
+    room_offset_m[0] = floorf(MIN(mcfxConv_getMinDimension(hTVCnv, 0), mcfxConv_getSourcePosition(hTVCnv, 0)) * 0.8f * 10.0f) / 10.0f;
+    room_offset_m[1] = floorf(MIN(mcfxConv_getMinDimension(hTVCnv, 1), mcfxConv_getSourcePosition(hTVCnv, 1)) * 0.8f * 10.0f) / 10.0f;
+    room_offset_m[2] = floorf(MIN(mcfxConv_getMinDimension(hTVCnv, 2), mcfxConv_getSourcePosition(hTVCnv, 2)) * 0.8f * 10.0f) / 10.0f;
 }
 room_dims_m_o[0] = room_dims_m[0] - room_offset_m[0];
 room_dims_m_o[1] = room_dims_m[1] - room_offset_m[1];

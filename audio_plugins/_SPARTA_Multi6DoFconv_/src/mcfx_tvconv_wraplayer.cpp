@@ -106,6 +106,11 @@ typedef struct _internal_MCFXConv_struct {
 /*  MCFX Create, Destroy, Apply functions */
 /* ====================================== */
 
+/**
+ * @brief Create the internal data structure for the MCFX convolver
+ * Do not confuse this with mcfxWrapper_create, which is the wrapper for the tvconv API
+ * This retains the programming pattern used in the SAF library for TVConv *
+ */
 void mcfxConv_create(
     void** const phMCFXc,
     int _BufferSize,
@@ -301,22 +306,20 @@ void mcfxConv_create(
     }
 #endif
 
-    h->_configLoaded = true;
-    h->latencySamples = h->safemode_ ? _ConvBufferSize_ref : _ConvBufferSize_ref - _BufferSize;
-    h->_skippedCycles.set(0);
-
+        h->_configLoaded = true;
+        h->latencySamples = h->safemode_ ? _ConvBufferSize_ref : _ConvBufferSize_ref - _BufferSize;
+        h->_skippedCycles.set(0);
 
 #if ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
     #ifdef PRIMING
-    // PRIMING_BUF_SIZE_BLOCKS has to be std::ceilf(pData->ir_length / _BufferSize) // Actually we can subtract 1 since the new block is convolved anyway after priming
-    int priming_buf_size_blocks = std::ceilf((float)length_h / (float)_BufferSize);
-    priming_buf_size_blocks = jmax(priming_buf_size_blocks-1, 1); // Subtract 1 since, after priming, the new input block is convovled anyway, than take the max with 1 to avoid 0
-    h->primingBuffer = new juce::AudioBuffer<float>(jmax(nCHin, nCHout), _BufferSize * priming_buf_size_blocks);
-    h->primingReadpoint = 0;
+        // PRIMING_BUF_SIZE_BLOCKS has to be std::ceilf(pData->ir_length / _BufferSize) // Actually we can subtract 1 since the new block is convolved anyway after priming
+        int priming_buf_size_blocks = std::ceilf((float)length_h / (float)_BufferSize);
+        priming_buf_size_blocks = jmax(priming_buf_size_blocks - 1, 1);  // Subtract 1 since, after priming, the new input block is convovled anyway, than take the max with 1 to avoid 0
+        h->primingBuffer = new juce::AudioBuffer<float>(jmax(nCHin, nCHout), _BufferSize * priming_buf_size_blocks);
+        h->primingReadpoint = 0;
     #endif
 #endif
-
-}
+    }
 
     void mcfxConv_destroy(void** const phMCFXc) {
         Internal_Conv_struct* h = (Internal_Conv_struct*)(*phMCFXc);
@@ -632,7 +635,7 @@ void mcfxConv_create(
         int nInputChannels; /**< number of input channels */
         vectorND targetPosition;
         char* sofa_filepath;
-        SAF_TVCONV_ERROR_CODES sofa_file_error;
+        SAF_MCFX_ERROR_CODES sofa_file_error;
 
         /*MCFX paramters*/
         double _SampleRate;
@@ -656,7 +659,7 @@ void mcfxConv_create(
 #endif
     } McfxConvData;
 
-    void tvconv_create(void** const phMcfxConv) {
+    void mcfxWrapper_create(void** const phMcfxConv) {
         McfxConvData* pData = (McfxConvData*)malloc1d(sizeof(McfxConvData));
         *phMcfxConv = (void*)pData;
 
@@ -673,7 +676,7 @@ void mcfxConv_create(
         pData->ir_fs = 0;
         pData->nOutputChannels = 0;
         pData->sofa_filepath = NULL;
-        pData->sofa_file_error = SAF_TVCONV_NOT_INIT;
+        pData->sofa_file_error = SAF_MCFX_NOT_INIT;
 
         /* positions */
         pData->listenerPositions = NULL;
@@ -705,7 +708,7 @@ void mcfxConv_create(
 #endif
     }
 
-    void tvconv_destroy(void** const phMcfxConv) {
+    void mcfxWrapper_destroy(void** const phMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(*phMcfxConv);
 
         if (pData != NULL) {
@@ -731,7 +734,7 @@ void mcfxConv_create(
         }
     }
 
-    void tvconv_init(
+    void mcfxWrapper_init(
         void* const hConvData,
         int sampleRate,
         int hostBlockSize) {
@@ -745,7 +748,7 @@ void mcfxConv_create(
             pData->reInitFilters = 1;
             internal_setCodecStatus(hConvData, CODEC_STATUS_NOT_INITIALISED);
         }
-        tvconv_checkReInit(hConvData);
+        mcfxConv_checkReInit(hConvData);
     }
 
 #if (MCFX_CONVOLVER_MODE == SINGLE_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(SINGLE_CONVOLVER_MODE)
@@ -813,7 +816,7 @@ void mcfxConv_create(
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
 
         int nSamples = buffer.getNumSamples();
-        tvconv_checkReInit(hMcfxConv);
+        mcfxConv_checkReInit(hMcfxConv);
 
         // Process Block if filters are loaded and saf_matrixConv_apply is ready for it
         if (pData->reInitFilters == 0 && pData->codecStatus == CODEC_STATUS_INITIALISED) {
@@ -1051,12 +1054,12 @@ void mcfxConv_create(
         pData->procStatus = PROC_STATUS_NOT_ONGOING;
     }
 
-    void tvconv_refreshParams(void* const hMcfxConv) {
+    void mcfxConv_refreshParams(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         pData->reInitFilters = 1;
     }
 
-    void tvconv_checkReInit(void* const hMcfxConv) {
+    void mcfxConv_checkReInit(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
 
         while (pData->procStatus == CODEC_STATUS_INITIALISING) {
@@ -1092,7 +1095,7 @@ void mcfxConv_create(
         }
     }
 
-    void tvconv_setFiltersAndPositions(void* const hMcfxConv) {
+    void mcfxConv_setFiltersAndPositions(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)hMcfxConv;
 #ifdef SAF_ENABLE_SOFA_READER_MODULE
         int i;
@@ -1152,19 +1155,19 @@ void mcfxConv_create(
             /* extra error handling */
             switch (error) {
                 case SAF_SOFA_OK: /** None of the error checks failed */
-                    pData->sofa_file_error = SAF_TVCONV_SOFA_OK;
+                    pData->sofa_file_error = SAF_MCFX_SOFA_OK;
                     break;
                 case SAF_SOFA_ERROR_INVALID_FILE_OR_FILE_PATH: /** Not a SOFA file, or no such file was found in the specified location */
-                    pData->sofa_file_error = SAF_TVCONV_SOFA_ERROR_INVALID_FILE_OR_FILE_PATH;
+                    pData->sofa_file_error = SAF_MCFX_SOFA_ERROR_INVALID_FILE_OR_FILE_PATH;
                     break;
                 case SAF_SOFA_ERROR_DIMENSIONS_UNEXPECTED: /** Dimensions of the SOFA data were not as expected */
-                    pData->sofa_file_error = SAF_TVCONV_SOFA_ERROR_DIMENSIONS_UNEXPECTED;
+                    pData->sofa_file_error = SAF_MCFX_SOFA_ERROR_DIMENSIONS_UNEXPECTED;
                     break;
                 case SAF_SOFA_ERROR_FORMAT_UNEXPECTED: /** The data-type of the SOFA data was not as expected */
-                    pData->sofa_file_error = SAF_TVCONV_SOFA_ERROR_FORMAT_UNEXPECTED;
+                    pData->sofa_file_error = SAF_MCFX_SOFA_ERROR_FORMAT_UNEXPECTED;
                     break;
                 case SAF_SOFA_ERROR_NETCDF_IN_USE: /** NetCDF is not thread safe! */
-                    pData->sofa_file_error = SAF_TVCONV_SOFA_ERROR_NETCDF_IN_USE;
+                    pData->sofa_file_error = SAF_MCFX_SOFA_ERROR_NETCDF_IN_USE;
                     break;
             }
         }
@@ -1185,21 +1188,21 @@ void mcfxConv_create(
         pData->progressBar0_1 = 1.0f;
     }
 
-    void tvconv_reinitConvolver(void* const hMcfxConv) {
+    void mcfxConv_reinitConvolver(void* const hMcfxConv) {
         if (hMcfxConv == NULL) return;
         ((McfxConvData*)(hMcfxConv))->reInitFilters = 1;
     }
 
-    void tvconv_setSofaFilePath(void* const hMcfxConv, const char* path) {
+    void mcfxConv_setSofaFilePath(void* const hMcfxConv, const char* path) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
-        pData->sofa_file_error = SAF_TVCONV_SOFA_LOADING;
+        pData->sofa_file_error = SAF_MCFX_SOFA_LOADING;
         pData->sofa_filepath = (char*)malloc1d(strlen(path) + 1);
         strcpy(pData->sofa_filepath, path);
         pData->codecStatus = CODEC_STATUS_NOT_INITIALISED;
-        tvconv_setFiltersAndPositions(hMcfxConv);
+        mcfxConv_setFiltersAndPositions(hMcfxConv);
     }
 
-    void tvconv_setTargetPosition(void* const hMcfxConv, float position, int dim) {
+    void mcfxConv_setTargetPosition(void* const hMcfxConv, float position, int dim) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         saf_assert(dim >= 0 && dim < NUM_DIMENSIONS, "Dimension out of scope");
         pData->targetPosition[dim] = position;
@@ -1208,73 +1211,73 @@ void mcfxConv_create(
 
     /*gets*/
 
-    int tvconv_getNumInputChannels(void* const hMcfxConv) {
+    int mcfxConv_getNumInputChannels(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->nInputChannels;
     }
 
-    int tvconv_getNumOutputChannels(void* const hMcfxConv) {
+    int mcfxConv_getNumOutputChannels(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->nOutputChannels;
     }
 
-    int tvconv_getHostBlockSize(void* const hMcfxConv) {
+    int mcfxConv_getHostBlockSize(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->_BufferSize;  // This replaced pData->hostBlockSize
     }
 
-    int tvconv_getNumIRs(void* const hMcfxConv) {
+    int mcfxConv_getNumIRs(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->nIrChannels;
     }
 
-    int tvconv_getNumListenerPositions(void* const hMcfxConv) {
+    int mcfxConv_getNumListenerPositions(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->codecStatus == CODEC_STATUS_INITIALISED ? pData->nListenerPositions : 0;
     }
 
-    float tvconv_getListenerPosition(void* const hMcfxConv, int index, int dim) {
+    float mcfxConv_getListenerPosition(void* const hMcfxConv, int index, int dim) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->codecStatus == CODEC_STATUS_INITIALISED ? pData->listenerPositions[index][dim] : 0.0f;
     }
 
-    int tvconv_getListenerPositionIdx(void* const hMcfxConv) {
+    int mcfxConv_getListenerPositionIdx(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->position_idx;
     }
 
-    float tvconv_getTargetPosition(void* const hMcfxConv, int dim) {
+    float mcfxConv_getTargetPosition(void* const hMcfxConv, int dim) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         saf_assert(dim >= 0 && dim < NUM_DIMENSIONS, "Dimension out of scope");
         return (float)pData->targetPosition[dim];
     }
 
-    float tvconv_getSourcePosition(void* const hMcfxConv, int dim) {
+    float mcfxConv_getSourcePosition(void* const hMcfxConv, int dim) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         saf_assert(dim >= 0 && dim < NUM_DIMENSIONS, "Dimension out of scope");
         return (float)pData->sourcePosition[dim];
     }
 
-    float tvconv_getMinDimension(void* const hMcfxConv, int dim) {
+    float mcfxConv_getMinDimension(void* const hMcfxConv, int dim) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         saf_assert(dim >= 0 && dim < NUM_DIMENSIONS, "Dimension out of scope");
         return (float)pData->minDimensions[dim];
     }
 
-    float tvconv_getMaxDimension(void* const hMcfxConv, int dim) {
+    float mcfxConv_getMaxDimension(void* const hMcfxConv, int dim) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         saf_assert(dim >= 0 && dim < NUM_DIMENSIONS, "Dimension out of scope");
         return (float)pData->maxDimensions[dim];
     }
 
-    int tvconv_getIRLength(void* const hMcfxConv) {
+    int mcfxConv_getIRLength(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->ir_length;
     }
 
     int mcfxConv_getLongestPartSize(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
-       if (pData == NULL) return 0;  // In the unlikely event that the handle is invalid, return 0 as the plugin latency in samples
+        if (pData == NULL) return 0;  // In the unlikely event that the handle is invalid, return 0 as the plugin latency in samples
 
         Internal_Conv_struct* h = (Internal_Conv_struct*)(pData->hMCFXConv);
         if (h == NULL) return 0;  // If no filters are loaded, return 0 as the plugin latency in samples
@@ -1282,22 +1285,22 @@ void mcfxConv_create(
         return h->largestPartition;
     }
 
-    int tvconv_getIRFs(void* const hMcfxConv) {
+    int mcfxConv_getIRFs(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->ir_fs;
     }
 
-    int tvconv_getResampledIR(void* const hMcfxConv) {
+    int mcfxConv_getResampledIR(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->resampled_ir;
     }
 
-    int tvconv_getHostFs(void* const hMcfxConv) {
+    int mcfxConv_getHostFs(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->_SampleRate;  // pData->_SampleRate replaced saf's original host_fs
     }
 
-    int tvconv_getProcessingDelay(void* const hMcfxConv) {
+    int mcfxConv_getProcessingDelay(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         if (pData == NULL) return 0;  // In the unlikely event that the handle is invalid, return 0 as the plugin latency in samples
 
@@ -1307,7 +1310,7 @@ void mcfxConv_create(
         return h->latencySamples;
     }
 
-    char* tvconv_getSofaFilePath(void* const hMcfxConv) {
+    char* mcfxConv_getSofaFilePath(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         if (pData->sofa_filepath != NULL)
             return pData->sofa_filepath;
@@ -1315,12 +1318,12 @@ void mcfxConv_create(
             return "no_file";
     }
 
-    SAF_TVCONV_ERROR_CODES tvconv_getSofaErrorState(void* const hMcfxConv) {
+    SAF_MCFX_ERROR_CODES mcfxConv_getSofaErrorState(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->sofa_file_error;
     }
 
-    CODEC_STATUS tvconv_getCodecStatus(void* const hMcfxConv) {
+    CODEC_STATUS mcfxConv_getCodecStatus(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->codecStatus;
     }
@@ -1386,18 +1389,6 @@ void mcfxConv_create(
     }
 
     /** From MCFX Convolver PluginProcessor.cpp */
-    void getIntFromLine(int& ret, String& line) {
-        if (line.isEmpty()) return;
-        ret = line.getIntValue();
-        line = line.fromFirstOccurrenceOf(" ", false, true).trim();
-    }
-
-    /** From MCFX Convolver PluginProcessor.cpp */
-    void getFloatFromLine(float& ret, String& line) {
-        if (line.isEmpty()) return;
-        ret = line.getFloatValue();
-        line = line.fromFirstOccurrenceOf(" ", false, true).trim();
-    }
 
     int mcfxConv_getSkippedCyclesCount(void* const hMcfxConv)  // TODO: use in the plugin
     {
@@ -1466,7 +1457,7 @@ void mcfxConv_create(
 
         if (nextPowerOfTwo(convBufferSize) != pData->_ConvBufferSize) {
             pData->_ConvBufferSize = nextPowerOfTwo(convBufferSize);
-            tvconv_reinitConvolver(hMcfxConv);
+            mcfxConv_reinitConvolver(hMcfxConv);
         }
     }
 
@@ -1479,7 +1470,7 @@ void mcfxConv_create(
 
         if (nextPowerOfTwo(maxPartitionSize) != pData->_MaxPartSize) {
             pData->_MaxPartSize = nextPowerOfTwo(maxPartitionSize);
-            tvconv_reinitConvolver(hMcfxConv);
+            mcfxConv_reinitConvolver(hMcfxConv);
         }
     }
 
@@ -1519,7 +1510,7 @@ void mcfxConv_create(
 
 #if (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
 
-    void mcfxConv_DoubleCrossfadeTime(void* const hMcfxConv, bool* maxReached) {
+    void mcfxConv_doubleCrossfadeTime(void* const hMcfxConv, bool* maxReached) {
         if (hMcfxConv == NULL) return;  // If the handle is invalid, return 0 as the number of skipped cycles
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
 
@@ -1530,10 +1521,10 @@ void mcfxConv_create(
         *maxReached = false;
 
         pData->num_xfd_convolvers *= 2;
-        tvconv_reinitConvolver(hMcfxConv);
+        mcfxConv_reinitConvolver(hMcfxConv);
     }
 
-    void mcfxConv_HalveCrossfadeTime(void* const hMcfxConv, bool* minReached) {
+    void mcfxConv_halveCrossfadeTime(void* const hMcfxConv, bool* minReached) {
         if (hMcfxConv == NULL) return;  // If the handle is invalid, return 0 as the number of skipped cycles
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
 
@@ -1544,7 +1535,7 @@ void mcfxConv_create(
         *minReached = false;
 
         pData->num_xfd_convolvers /= 2;
-        tvconv_reinitConvolver(hMcfxConv);
+        mcfxConv_reinitConvolver(hMcfxConv);
     }
 
     void mcfxConv_setCrossfadeTime_samples(void* const hMcfxConv, unsigned int crossfadeTime_samples) {
