@@ -371,6 +371,8 @@ public:
                      int maxpart,
                      bool safemode=false); // will add a delay of minpart_ samples to make sure there is never a buffer underrun for hosts that dare to send partial blocks(Adobe and Steinberg)
 
+    bool Configure(int numins, int numouts, int blocksize, int maxsize, int minpart, int maxpart, bool safemode, int& largest_partition);
+
     // Add an Impulse Response with dedicated Input/Output assignement
     bool AddFilter ( int in,
                      int out,

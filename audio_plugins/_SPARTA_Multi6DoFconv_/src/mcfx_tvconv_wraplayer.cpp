@@ -88,9 +88,9 @@ typedef struct _internal_MCFXConv_struct {
     int _min_out_ch;
     int _num_conv;
 
-    int latencySamples = 0;
-
+    int latencySamples;
     int posIdx_last;
+    int largestPartition;
 
 #ifdef PRIMING
     #if ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
@@ -136,6 +136,8 @@ void mcfxConv_create(
     /* End of Mcfx param init */
 
     h->posIdx_last = -1;
+    h->latencySamples = 0;
+    h->largestPartition = 0;
 
     // Ensure that the first partition size (or conv buffer size) is at least as large as the block size
     if (_ConvBufferSize_ref < _BufferSize) _ConvBufferSize_ref = _BufferSize;
@@ -164,13 +166,6 @@ void mcfxConv_create(
     // Set as default the maximum safe crossfade time with the current number of convolvers
     // In the case of 2 convolvers, crossfade time is the same as the buffer size
     xfdTime_samples = _BufferSize * (num_xfd_convolvers - 1);
-
-    #ifdef PRIMING
-    // PRIMING_BUF_SIZE_BLOCKS has to be std::ceilf(pData->ir_length / _BufferSize)
-    int priming_buf_size_blocks = std::ceilf((float)length_h / (float)_BufferSize);
-    h->primingBuffer = new juce::AudioBuffer<float>(jmax(nCHin, nCHout), _BufferSize * priming_buf_size_blocks);
-    h->primingReadpoint = 0;
-    #endif
 #else
     #error "Invalid MCFX_CONVOLVER_MODE"
 #endif
@@ -285,7 +280,7 @@ void mcfxConv_create(
     #else
         #error "Invalid MCFX_CONVOLVER_MODE"
     #endif
-
+        int curLargestPartition = 0;
         curMtxConv->Configure(
             curConvData->getNumInputChannels(),
             curConvData->getNumOutputChannels(),
@@ -293,7 +288,9 @@ void mcfxConv_create(
             curConvData->getMaxLength(),
             _ConvBufferSize_ref,
             _MaxPartSize_ref,
-            h->safemode_);
+            h->safemode_,
+            curLargestPartition);
+        h->largestPartition = jmax(h->largestPartition, curLargestPartition);
 
         for (int i = 0; i < curConvData->getNumIRs(); i++) {
             // if (threadShouldExit()) return; //TODO: check what to do with thread stuff during load
@@ -304,10 +301,22 @@ void mcfxConv_create(
     }
 #endif
 
-        h->_configLoaded = true;
-        h->latencySamples = h->safemode_ ? _ConvBufferSize_ref : _ConvBufferSize_ref - _BufferSize;
-        h->_skippedCycles.set(0);
-    }
+    h->_configLoaded = true;
+    h->latencySamples = h->safemode_ ? _ConvBufferSize_ref : _ConvBufferSize_ref - _BufferSize;
+    h->_skippedCycles.set(0);
+
+
+#if ((MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)) || ((MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE))
+    #ifdef PRIMING
+    // PRIMING_BUF_SIZE_BLOCKS has to be std::ceilf(pData->ir_length / _BufferSize) // Actually we can subtract 1 since the new block is convolved anyway after priming
+    int priming_buf_size_blocks = std::ceilf((float)length_h / (float)_BufferSize);
+    priming_buf_size_blocks = jmax(priming_buf_size_blocks-1, 1); // Subtract 1 since, after priming, the new input block is convovled anyway, than take the max with 1 to avoid 0
+    h->primingBuffer = new juce::AudioBuffer<float>(jmax(nCHin, nCHout), _BufferSize * priming_buf_size_blocks);
+    h->primingReadpoint = 0;
+    #endif
+#endif
+
+}
 
     void mcfxConv_destroy(void** const phMCFXc) {
         Internal_Conv_struct* h = (Internal_Conv_struct*)(*phMCFXc);
@@ -1261,6 +1270,16 @@ void mcfxConv_create(
     int tvconv_getIRLength(void* const hMcfxConv) {
         McfxConvData* pData = (McfxConvData*)(hMcfxConv);
         return pData->ir_length;
+    }
+
+    int mcfxConv_getLongestPartSize(void* const hMcfxConv) {
+        McfxConvData* pData = (McfxConvData*)(hMcfxConv);
+       if (pData == NULL) return 0;  // In the unlikely event that the handle is invalid, return 0 as the plugin latency in samples
+
+        Internal_Conv_struct* h = (Internal_Conv_struct*)(pData->hMCFXConv);
+        if (h == NULL) return 0;  // If no filters are loaded, return 0 as the plugin latency in samples
+
+        return h->largestPartition;
     }
 
     int tvconv_getIRFs(void* const hMcfxConv) {

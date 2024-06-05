@@ -1581,6 +1581,9 @@ void PluginEditor::timerCallback()
     label_NIRs->setText(String(tvconv_getNumIRs(hTVC)), dontSendNotification);
     label_nIRpositions->setText(String(tvconv_getNumListenerPositions(hTVC)), dontSendNotification);
     label_filterLength->setText(String((float)tvconv_getIRLength(hTVC)/MAX((float)tvconv_getIRFs(hTVC),1/*avoid nan*/)), dontSendNotification);
+    int longestPart = mcfxConv_getLongestPartSize(hTVC);
+    if (longestPart > 0)
+        label_filterLength->setTooltip(String("Longest partition: "+String(mcfxConv_getLongestPartSize(hTVC))+" samples"));
     label_hostfs->setText(String(tvconv_getHostFs(hTVC)), dontSendNotification);
 
     setPartComboboxes();

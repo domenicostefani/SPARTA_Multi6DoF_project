@@ -172,6 +172,13 @@ void MtxConvMaster::processBlock(juce::AudioSampleBuffer &inbuf, juce::AudioSamp
 
 bool MtxConvMaster::Configure(int numins, int numouts, int blocksize, int maxsize, int minpart, int maxpart, bool safemode)
 {
+    int largest_partition = 0;
+    return Configure(numins, numouts, blocksize, maxsize, minpart, maxpart, safemode, largest_partition);
+}
+
+
+bool MtxConvMaster::Configure(int numins, int numouts, int blocksize, int maxsize, int minpart, int maxpart, bool safemode, int& largest_partition)
+{
     if (!numins || !numouts || !blocksize || configuration_)
         return false;
 
@@ -246,6 +253,7 @@ bool MtxConvMaster::Configure(int numins, int numouts, int blocksize, int maxsiz
 
         priority--;
 
+        largest_partition = partsize;
         partsize *= 2;
 
     }

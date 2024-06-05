@@ -36,7 +36,7 @@
 #define CROSSFADE_PARAMETRIC_MODE 4
 
 #define MCFX_CONVOLVER_MODE CROSSFADE_1BLOCK_MODE
-// #define PRIMING  // Used to fill the convolver buffers with coherend data before switching to it
+#define PRIMING  // Used to fill the convolver buffers with coherend data before switching to it
 
 // Next defines are here for debugging purposes
 // #define DISABLE_FILTER_REPLACEMENT // [FOR DEBUG]
@@ -74,14 +74,14 @@
 #endif
 
 #include "_common.h"
-#include "md_malloc.h"      //TODO: see whether to better integrate this with SAF
-#include "saf_utilities.h"  //TODO: see whether to better integrate this with SAF
+#include "md_malloc.h"
+#include "saf_utilities.h"
 #ifdef SAF_ENABLE_SOFA_READER_MODULE
-    #define SAF_SOFA_READER_MODULE  // TODO: see whether to better integrate this with SAF// Or at least copy the licence comment from saf.h
-    #include "saf_sofa_reader.h"    //TODO: see whether to better integrate this with SAF// Or at least copy the licence comment from saf.h
+    #define SAF_SOFA_READER_MODULE
+    #include "saf_sofa_reader.h"
 #endif                              /* SAF_ENABLE_SOFA_READER_MODULE */
 #include <JuceHeader.h>
-#include <stddef.h>  //TODO: see wether to keep or move (this is for the definition of NULL)
+#include <stddef.h>
 
 #include "MCFX_ConvolverData.h"
 #include "MCFX_MtxConv.h"
@@ -222,6 +222,9 @@ float tvconv_getMaxDimension(void* const hMcfxConv, int dim);
 
 /** Returns the current filter length, in samples */
 int tvconv_getIRLength(void* const hMcfxConv);
+
+/** Returns the longest partition size used by MCFX with the current filters, 0 if none are loaded */
+int mcfxConv_getLongestPartSize(void* const hMcfxConv);
 
 /** Returns the samplerate of the loaded filters  */
 int tvconv_getIRFs(void* const hMcfxConv);
