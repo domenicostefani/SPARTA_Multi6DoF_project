@@ -259,7 +259,7 @@ void mcfxConv_create(
     // if MCFX_CONVOLVER_MODE corresponds to SINGLE_CONVOLVER_MODE, only one convolver is initialized and there is no crossfade between positions (clicks when changing positions)
     // if MCFX_CONVOLVER_MODE is CROSSFADE_1BLOCK_MODE or CROSSFADE_PARAMETRIC_MODE, a set number of convolvers is initialized
     for (int conv_idx = 0; conv_idx < convolversToInit; conv_idx++) {
-        int data_idx = conv_idx % h->convdata_s->size();  // in the case of CROSSFADED_MULTIPLE_CONVOLVERS and more convolvers than positions, we cycle through the positions
+        int data_idx = conv_idx == 0 ? initIdx : (conv_idx % h->convdata_s->size());  // First convolver is on initIdx, then in the case of CROSSFADED_MULTIPLE_CONVOLVERS and more convolvers than positions, we cycle through the positions
         ConvolverData* curConvData = h->convdata_s->getUnchecked(data_idx);
 
     #if (MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(PER_POS_CONVOLVER_MODE)
@@ -385,12 +385,15 @@ void mcfxConv_create(
      *
      * @param newPos
      * @param phMCFXc
+     * 
+     * @return true if change was made, or it was not necessary because positions are equal
      */
-    void changeListenerPosition(void* phMCFXc, int newPos, int lastPos, unsigned int xfdTime_samples, ConvolverStealingStrategy strategy = ConvolverStealingStrategy::LOWEST_GAIN) {
-        if (newPos == lastPos) return;
+    bool changeListenerPosition(void* phMCFXc, int newPos, int lastPos, unsigned int xfdTime_samples, ConvolverStealingStrategy strategy = ConvolverStealingStrategy::LOWEST_GAIN) {
+        if (newPos == lastPos) return true; // Return true as
         Internal_Conv_struct* h = (Internal_Conv_struct*)(phMCFXc);
-        if (newPos >= h->convdata_s->size()) return;
-        if (lastPos >= h->convdata_s->size()) return;
+        if (newPos >= h->convdata_s->size()) return false;
+        if (lastPos >= h->convdata_s->size()) return false;
+        if (lastPos == -1) return false; // This should happen only at the first call
 
         // when arriving here, we can be in one of the following situations:
         // 1. there is a convolver already set to the new position
@@ -425,10 +428,20 @@ void mcfxConv_create(
 
         int oldPosConvolverIdx = -1;
 
+#ifdef EXTREME_DEBUGGING_CHANGEPOSISSUE
+        std::string DEBUG_POSITIONS = "";  // TODO: remove
+        std::string DEBUG_PROCESSING = "";  // TODO: remove
+#endif
+
         for (int conv_idx = 0; conv_idx < h->mtxconv_xfd_info_s->size(); conv_idx++) {
             CrossfadedConvInfo* curXfdInfo = h->mtxconv_xfd_info_s->getUnchecked(conv_idx);
-            if (curXfdInfo->pos_idx == lastPos)
+#ifdef EXTREME_DEBUGGING_CHANGEPOSISSUE
+            DEBUG_POSITIONS += "[" + std::to_string(conv_idx) + "]:" +std::to_string(curXfdInfo->pos_idx) + " ";  // TODO: remove
+            DEBUG_PROCESSING += "[" + std::to_string(conv_idx) + "]:" + (curXfdInfo->isProcessing?"true":"false") + " ";  // TODO: remove
+#endif
+            if (curXfdInfo->pos_idx == lastPos) {
                 oldPosConvolverIdx = conv_idx;
+            }
             if (curXfdInfo->pos_idx == newPos) {
                 samePosConvolver = conv_idx;
             }
@@ -445,6 +458,15 @@ void mcfxConv_create(
                 }
             }
         }
+        
+        // After having checked all convolvers, we must have found the convolver that was handling the last position
+        // Otherwise, we have a bug in the code, as lastPos turned out to be invalid
+        #ifdef EXTREME_DEBUGGING_CHANGEPOSISSUE
+        if (oldPosConvolverIdx == -1)
+            throw std::logic_error("Since lastPos index was valid" + std::to_string(lastPos) + ", convolver index should not be uninitialized (" + DEBUG_POSITIONS + ") processing->("+DEBUG_PROCESSING+")"); // TODO: replace with non fatal error
+        #endif
+        if (oldPosConvolverIdx == -1)
+            throw std::logic_error("Since lastPos index was valid" + std::to_string(lastPos) + ", convolver index should not be uninitialized"); // TODO: replace with non fatal error
 
         if (samePosConvolver != -1) {  // Case 1
             // Enable new position convolver and start fading in
@@ -543,14 +565,10 @@ void mcfxConv_create(
     #endif
         }
 
-        if (lastPos == -1)
-            return;
         // Take old position convolver and start fading out
-        if (oldPosConvolverIdx == -1)
-            throw std::logic_error("Since lastPos index was valid, convolver index should not be uninitialized");
         CrossfadedConvInfo* curXfdInfoOld = h->mtxconv_xfd_info_s->getUnchecked(oldPosConvolverIdx);
         if (curXfdInfoOld->pos_idx != lastPos)
-            throw std::logic_error("Position index of now-old convolver should match lastPosition");
+            throw std::logic_error("Position index of now-old convolver should match lastPosition"); // TODO: replace with non fatal error
         curXfdInfoOld->isFadingOut = true;
         curXfdInfoOld->isFadingIn = false;
     // float currentGainValue = curXfdInfoOld->gain.getCurrentValue();
@@ -562,6 +580,8 @@ void mcfxConv_create(
         // curXfdInfoOld->gain.setCurrentAndTargetValue(currentGainValue);
         curXfdInfoOld->gain.setTargetValue(0.0);
         curXfdInfoOld->age = 0;
+
+        return true;
     }
 
     void updateAges(juce::OwnedArray<CrossfadedConvInfo> * mtxconv_xfd_info_s, int numSamplesProcessed) {
@@ -826,10 +846,14 @@ void mcfxConv_create(
 
             //<-- From PluginProcessor.cpp of MCFXConvolver
             if (h != NULL && h->_configLoaded) {
+
+                auto pData_position_idx = pData->position_idx; // Fix these to prevent issues in the case when pData->position_idx is changed during processing
+                auto h_posIdx_last = h->posIdx_last;
+
 #if (MCFX_CONVOLVER_MODE == PER_POS_CONVOLVER_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(PER_POS_CONVOLVER_MODE)
                 size_t convolverVectorSize = h->convdata_s->size();
 
-                int current_pos_idx = pData->position_idx;
+                int current_pos_idx = pData_position_idx;
                 if (current_pos_idx >= convolverVectorSize) {
                     pData->procStatus = PROC_STATUS_NOT_ONGOING;
                     return;  // TODO: check when this is the case
@@ -852,9 +876,9 @@ void mcfxConv_create(
             //// If a single convolver is in use, filters need to be replaced whenever the position changes // Cross-fading is not implemented yet
 
             MtxConvMaster* curMtxConv = h->mtxconv;
-            int current_pos_idx = pData->position_idx;
+            int current_pos_idx = pData_position_idx;
             // If the current_pos_idx is different than the previous position, replace the filters and update previous position
-            if (current_pos_idx != h->posIdx_last) {
+            if (current_pos_idx != h_posIdx_last) {
                 mcfxConv_replaceConvData((void*)pData, current_pos_idx);
                 h->posIdx_last = current_pos_idx;
             }
@@ -881,10 +905,10 @@ void mcfxConv_create(
                 bool zeros_at_changeblock_end = false;
     #endif
 
-                if (pData->position_idx != h->posIdx_last) {
+                if (pData_position_idx != h_posIdx_last) {
     // Change the listener position and initiate the crossfade between the old and new position
     #ifndef DISABLE_ENTIRELY_CONV_CHANGE_BUT_RESET
-                    changeListenerPosition(pData->hMCFXConv, pData->position_idx, h->posIdx_last, pData->xfdTime_samples);
+                    bool clpres = changeListenerPosition(pData->hMCFXConv, pData_position_idx, h_posIdx_last, pData->xfdTime_samples);
     #else
                     for (int convidx = 0; convidx < h->mtxconv_xfd_s->size(); convidx++) {
                         auto* curconv = h->mtxconv_xfd_s->getUnchecked(convidx);
@@ -898,8 +922,11 @@ void mcfxConv_create(
                         h->mtxconv_xfd_info_s->getUnchecked(convidx)->requiresPriming = true;
                     }
         #endif
+                    bool clpres = true;
     #endif
-                    h->posIdx_last = pData->position_idx;
+                    if (clpres || h_posIdx_last == -1) {  // TODO: integrate the h_posIdx_last == -1 in the return type of changeListenerPosition by returning true if lastPos == -1 (and check that there are not issues with the rest of the code)
+                        h->posIdx_last = pData_position_idx;
+                    }
                 }
 
     #ifdef PRIMING
@@ -1079,7 +1106,7 @@ void mcfxConv_create(
                                 pData->ir_length,
                                 pData->nListenerPositions,
                                 pData->nOutputChannels,
-                                pData->position_idx,
+                                pData->position_idx, // initIdx
                                 pData->_SampleRate,  // _sampleRate was passed as required by MCFX convdata, as double
                                 pData->ir_fs,        // Original IR samplerate for resampling
                                 pData->_MaxPartSize  // PASSED AS REFERENCE

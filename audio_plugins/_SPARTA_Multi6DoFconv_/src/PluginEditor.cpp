@@ -355,6 +355,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     setSize (860, 500);
 
+
     //[Constructor] You can add your own custom stuff here..
 
     #if (MCFX_CONVOLVER_MODE == CROSSFADE_1BLOCK_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_1BLOCK_MODE)
@@ -694,7 +695,7 @@ void PluginEditor::paint (juce::Graphics& g)
 
     {
         int x = 92, y = 1, width = 148, height = 32;
-        juce::String text (TRANS("MCFX-6DoFconv"));
+        juce::String text (TRANS("Multi6DoFconv"));
         juce::Colour fillColour = juce::Colour (0xff8c00ff);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
@@ -1238,7 +1239,7 @@ void PluginEditor::paint (juce::Graphics& g)
         fillColour = juce::Colour (0x00000000);
        #elif (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
         fillColour = crossfadeSldBackground;
-        
+    
         crossfadeWarningArea.setY(y);
         crossfadeWarningArea.setHeight(height);
 
@@ -1583,7 +1584,7 @@ void PluginEditor::timerCallback()
     label_filterLength->setText(String((float)mcfxConv_getIRLength(hTVC)/MAX((float)mcfxConv_getIRFs(hTVC),1/*avoid nan*/)), dontSendNotification);
     int longestPart = mcfxConv_getLongestPartSize(hTVC);
     if (longestPart > 0)
-        label_filterLength->setTooltip(String("Longest partition: "+String(mcfxConv_getLongestPartSize(hTVC))+" samples"));
+        label_filterLength->setTooltip(String("Length in samples: "+String(mcfxConv_getIRLength(hTVC))+", Longest partition: "+String(mcfxConv_getLongestPartSize(hTVC))+" samples"));
     label_hostfs->setText(String(mcfxConv_getHostFs(hTVC)), dontSendNotification);
 
     setPartComboboxes();
@@ -1665,7 +1666,7 @@ void PluginEditor::updateCrossfadeRange() {
     maximumSafeCrossfadeMS = maxtimeS * 1000.0;
 
     SL_crossfadeTimeMs->setRange(0,
-                                 maximumSafeCrossfadeMS 
+                                 maximumSafeCrossfadeMS
                                 #if (MCFX_CONVOLVER_MODE == CROSSFADE_PARAMETRIC_MODE) && defined(MCFX_CONVOLVER_MODE) && defined(CROSSFADE_PARAMETRIC_MODE)
                                  * BEYOND_SAFE_CROSSFADE_FACTOR
                                 #endif
@@ -1835,7 +1836,7 @@ BEGIN_JUCER_METADATA
     <TEXT pos="92 1 148 32" fill="solid: ff8c00ff" hasStroke="0" text="Multi6DoFconv"
           fontname="Default font" fontsize="18.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="240 4 450 28" fill="solid: ffffffff" hasStroke="0" text="Multisource 6DoF Convolver with the MCFX convolution engine"
+    <TEXT pos="240 4 450 28" fill="solid: ffffffff" hasStroke="0" text="6DoF Convolver with the MCFX convolution engine"
           fontname="Default font" fontsize="12.0" kerning="0.0" bold="0"
           italic="0" justification="33"/>
     <RECT pos="0 0 860 2" fill="solid: 61a52a" hasStroke="1" stroke="2, mitered, butt"
