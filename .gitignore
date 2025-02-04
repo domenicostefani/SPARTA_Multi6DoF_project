@@ -73,3 +73,5 @@ ipch/
 *.tlog
 *.log
 build/
+.vscode/settings.json
+desktop.ini

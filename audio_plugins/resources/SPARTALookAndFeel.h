@@ -168,8 +168,8 @@ struct SPARTALookAndFeel    : public LookAndFeel_V4
                            float sliderPos, float minSliderPos, float maxSliderPos,
                            const Slider::SliderStyle style, Slider& slider) override
     {
-        //g.fillAll (slider.findColour (Slider::backgroundColourId));
-        g.fillAll (Colour::fromRGBA(0.0f,0.0f,0.0f,0.0f));
+        g.fillAll (slider.findColour (Slider::backgroundColourId));
+        // g.fillAll (Colour::fromRGBA(0.0f,0.0f,0.0f,0.0f));
 
         if (style == Slider::LinearBar || style == Slider::LinearBarVertical)
         {
@@ -209,7 +209,7 @@ struct SPARTALookAndFeel    : public LookAndFeel_V4
         if (slider.isHorizontal())
         {
             auto iy = (float) y + (float) height * 0.5f - sliderRadius * 0.5f;
-            Rectangle<float> r ((float) x - sliderRadius * 0.5f, iy, (float) width + sliderRadius, sliderRadius);
+            juce::Rectangle<float> r ((float) x - sliderRadius * 0.5f, iy, (float) width + sliderRadius, sliderRadius);
             auto onW = r.getWidth() * ((float) slider.valueToProportionOfLength (slider.getValue()));
 
             on.addRectangle (r.removeFromLeft (onW));
@@ -218,7 +218,7 @@ struct SPARTALookAndFeel    : public LookAndFeel_V4
         else
         {
             auto ix = (float) x + (float) width * 0.5f - sliderRadius * 0.5f;
-            Rectangle<float> r (ix, (float) y - sliderRadius * 0.5f, sliderRadius, (float) height + sliderRadius);
+            juce::Rectangle<float> r (ix, (float) y - sliderRadius * 0.5f, sliderRadius, (float) height + sliderRadius);
             auto value = slider.getValue();
             auto onH = r.getHeight() * ((float) slider.valueToProportionOfLength (value));
 

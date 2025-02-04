@@ -64,14 +64,29 @@ Note, however, that alternative performance libraries may also be used, with mor
 sudo apt-get install x11proto-xinerama-dev libwebkit2gtk-4.0-dev libgtk-3-dev x11proto-xext-dev libcurl4-openssl-dev libasound2-dev
 ```
 
+## Multi6DoFConv only
+
+SPARTA Multi6DoFConv is a modified version of 6DoFConv that uses the MCFX Convolver Engine for convolution ([MCFX GitHub](https://github.com/kronihias/mcfx)).
+Multi6DoFConv therefore requires the FFTW3 library (Float version).  
+Two CMake variables should be set:
+- `FFTW3_INCLUDE_DIR`, pointing to the path of the FFTW3 include directory, where `fftw3.h` is located.
+- `FFTW3F_LIBRARY` (NOTE the 'F' in FFTW3**F**_LIBRARY), pointing to the path of the FFTW3 library file, e.g. `libfftw3f-3.lib` on Windows.
+
+### Windows FFTW3 setup
+
+1. Download precompiled dlls from [fftw website](https://www.fftw.org/),
+2. Open the command prompt "**x64** Native Tools Command Prompt for VS 2022" (Search it on the start menu),
+3. Cd to fftw path and run the following command to generate .lib and .exp files:   
+    `lib /machine:x64 /def:libfftw3f-3.def`
+
 ## Building the plug-ins via CMake 
 
 The plug-ins may be built with CMake (version 3.15 or higher):
  ```
  mkdir build
- cmake -S . -B build -DSAF_ENABLE_SOFA_READER_MODULE=1
+ cmake -S . -B build -DSAF_ENABLE_SOFA_READER_MODULE=1 -DSAF_ENABLE_NETCDF=1
  cd build
- make
+ cmake --build . --target ALL_BUILD --config Release
  ```
  
 Or for Visual Studio users (using x64 Native Tools Command Prompt as **administrator**):

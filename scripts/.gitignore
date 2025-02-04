@@ -1,0 +1,7 @@
+# Reaper Projects
+*.rpp
+*.reapeaks
+# Wav files
+*.wav
+# Backups
+Backups/
