@@ -695,7 +695,7 @@ void PluginEditor::paint (juce::Graphics& g)
 
     {
         int x = 92, y = 1, width = 148, height = 32;
-        juce::String text (TRANS("Multi6DoFconv"));
+        juce::String text (TRANS("MCFX-6DoFconv"));
         juce::Colour fillColour = juce::Colour (0xff8c00ff);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
@@ -1833,7 +1833,7 @@ BEGIN_JUCER_METADATA
     <TEXT pos="16 1 100 32" fill="solid: ffffffff" hasStroke="0" text="SPARTA|"
           fontname="Default font" fontsize="18.8" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
-    <TEXT pos="92 1 148 32" fill="solid: ff8c00ff" hasStroke="0" text="Multi6DoFconv"
+    <TEXT pos="92 1 148 32" fill="solid: ff8c00ff" hasStroke="0" text="MCFX-6DoFconv"
           fontname="Default font" fontsize="18.0" kerning="0.0" bold="1"
           italic="0" justification="33" typefaceStyle="Bold"/>
     <TEXT pos="240 4 450 28" fill="solid: ffffffff" hasStroke="0" text="6DoF Convolver with the MCFX convolution engine"

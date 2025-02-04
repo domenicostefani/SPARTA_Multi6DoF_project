@@ -1,7 +1,7 @@
 
 cmake_minimum_required(VERSION 3.15)
 
-project(sparta_multi6DoFconv VERSION 1.0.0)
+project(sparta_MCFX-6DoFconv VERSION 1.0.0)
 message(STATUS "  ${PROJECT_NAME}")
 
 
@@ -43,7 +43,7 @@ juce_add_plugin(${PROJECT_NAME}
     COPY_PLUGIN_AFTER_BUILD     FALSE     # Where does this go in Windows + Linux?
     PLUGIN_MANUFACTURER_CODE    RAPD                
     PLUGIN_CODE                 M6DF                     
-    FORMATS                     VST      # ( VST AAX Unity VST3 AU AUv3 Standalone )
+    FORMATS                     VST VST3     # ( VST AAX Unity VST3 AU AUv3 Standalone )
     PRODUCT_NAME                "${PROJECT_NAME}"
 )   
 
