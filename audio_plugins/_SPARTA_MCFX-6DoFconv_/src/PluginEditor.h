@@ -82,6 +82,12 @@ public:
     void sliderValueChanged (juce::Slider* sliderThatWasMoved) override;
     void comboBoxChanged (juce::ComboBox* comboBoxThatHasChanged) override;
     void buttonClicked (juce::Button* buttonThatWasClicked) override;
+    
+	// Refresh SOFA file path on GUI if it changes externally (via OSC)
+	void refreshFileComp(void) {
+        fileComp->setCurrentFile(String(mcfxConv_getSofaFilePath(hTVC)), true, dontSendNotification);
+        refreshCoords();
+    };
 
 
 

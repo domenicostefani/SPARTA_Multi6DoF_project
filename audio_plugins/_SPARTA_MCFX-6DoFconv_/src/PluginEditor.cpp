@@ -169,7 +169,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     te_oscport.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (te_oscport.get());
-    te_oscport->setTooltip (TRANS("OSC addresses: /xyz [m]; /quat [-1,1]; /xyzquat [m][-1, 1]; /ypr [deg]; /xyzypr [m][deg]."));
+    te_oscport->setTooltip (TRANS("OSC addresses: /xyz [m]; /quat [-1,1]; /xyzquat [m][-1, 1]; /ypr [deg]; /xyzypr [m][deg]; /sofafile [absolute file path]."));
     te_oscport->setMultiLine (false);
     te_oscport->setReturnKeyStartsNewLine (false);
     te_oscport->setReadOnly (false);

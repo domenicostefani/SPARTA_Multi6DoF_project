@@ -200,8 +200,37 @@ void PluginProcessor::oscMessageReceived(const OSCMessage& message)
             rotator_setPitch(hRot, message[4].getFloat32());
         if (message[5].isFloat32())
             rotator_setRoll(hRot, message[5].getFloat32());
+
         return;
     }
+
+	// SOFA file path received from OSC interface. Load the new SOFA file path inside the MCFX convolver wrapper
+	else if (message.size() == 1 && message.getAddressPattern().toString().compare("/sofafile") == 0 ) 
+	{
+        
+        if (message[0].isString())
+		{
+            // DBG("SOFA file name received");
+
+			// Get file path string from OSC message
+            String directory		= message[0].getString(); 
+			
+			// Convert to UTF8
+            const char* new_cstring = (const char*)directory.toUTF8();
+            
+			// Set the new SOFA file path inside the MCFX convolver wrapper
+            mcfxConv_setSofaFilePath(getFXHandle(), new_cstring);
+            
+			// Get the editor handle
+            PluginEditor* hEditorLocal = (PluginEditor*)hEditor;
+            
+			// Refresh the path in GUI file component
+			hEditorLocal->refreshFileComp();
+
+
+        }
+		return;
+	}
 }
 
 const juce::String PluginProcessor::getName() const
@@ -486,7 +515,18 @@ bool PluginProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* PluginProcessor::createEditor()
 {
-    return new PluginEditor (this);
+    
+	// Create a new instance of the PluginEditor
+	PluginEditor* localEditorHandle = new PluginEditor(this);
+    
+	// Save the Editor handle to this Processor object
+	setEditorHandle((void*)localEditorHandle);
+    
+	// Return the Editor handle
+	return localEditorHandle;
+ 
+    //return (AudioProcessorEditor*) hEditor;
+    //return new PluginEditor(this);
 }
 
 //==============================================================================

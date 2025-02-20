@@ -53,14 +53,19 @@ class PluginProcessor  : public AudioProcessor,
                          public VSTCallbackHandler
 {
 public:
+
     /* Set/Get functions */
-    void* getFXHandle() { return hMCFXCnv; }
-    void* getFXHandle_rot() { return hRot; }
-    int getCurrentBlockSize(){ return nHostBlockSize; }
-    int getCurrentNumInputs(){ return nNumInputs; }
-    int getCurrentNumOutputs(){ return nNumOutputs; }
-    void setEnableRotation(bool newState){ enable_rotation = newState; }
-    bool getEnableRotation(){ return enable_rotation; }
+    void*	getFXHandle()					{ return hMCFXCnv; }
+    void*	getFXHandle_rot()				{ return hRot; }
+    int		getCurrentBlockSize()			{ return nHostBlockSize; }
+    int		getCurrentNumInputs()			{ return nNumInputs; }
+    int		getCurrentNumOutputs()			{ return nNumOutputs; }
+    void	setEnableRotation(bool newState){ enable_rotation = newState; }
+    bool	getEnableRotation()				{ return enable_rotation; }
+    
+	// PluginEditor Handle and setter method
+	void*	hEditor = nullptr;				/* PluginEditor handle */
+	void	setEditorHandle(void* newEditor) { hEditor = newEditor; }
     
     /* For refreshing window during automation */
     bool refreshWindow;
@@ -89,16 +94,17 @@ public:
     
     
 private:
-    void* hMCFXCnv;         /* MCFX wrapper handle */
-    void* hRot;           /* rotator handle */
-    int nNumInputs;       /* current number of input channels */
-    int nNumOutputs;      /* current number of output channels */
-    int nSampleRate;      /* current host sample rate */
-    int nHostBlockSize;   /* typical host block size to expect, in samples */
-    OSCReceiver osc;
-    bool osc_connected;
-    int osc_port_ID;
-    bool enable_rotation;
+	
+    void*				hMCFXCnv;			/* MCFX wrapper handle */
+    void*				hRot;				/* rotator handle */
+    int					nNumInputs;			/* current number of input channels */
+    int					nNumOutputs;		/* current number of output channels */
+    int					nSampleRate;		/* current host sample rate */
+    int					nHostBlockSize;		/* typical host block size to expect, in samples */
+    OSCReceiver			osc;
+    bool				osc_connected;
+    int					osc_port_ID;
+    bool				enable_rotation;
     
     
 /***************************************************************************\
