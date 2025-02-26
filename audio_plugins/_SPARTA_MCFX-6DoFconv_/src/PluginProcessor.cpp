@@ -224,11 +224,12 @@ void PluginProcessor::oscMessageReceived(const OSCMessage& message)
 			// Get the editor handle
             PluginEditor* hEditorLocal = (PluginEditor*)hEditor;
             
-			// Refresh the path in GUI file component
-			hEditorLocal->refreshFileComp();
-
-
-        }
+			// If the editor is open
+            if (this->isEditorOpen()) {
+                // Refresh the path in GUI file component
+                hEditorLocal->refreshFileComp();
+            }
+		}
 		return;
 	}
 }

@@ -404,7 +404,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 	/* fetch current configuration *///////////////////////////////////////////////////////////////////////////////////
     te_oscport->setText(String(hVst->getOscPortID()), dontSendNotification);
     CBviewMode->addItem(TRANS("Top View"), TOP_VIEW+1); /* must start from 1... */
-    CBviewMode->addItem(TRANS("Side View"), SIDE_VIEW+1);
+    CBviewMode->addItem(TRANS("Rear View"), SIDE_VIEW+1);
     CBviewMode->setSelectedId(TOP_VIEW+1, dontSendNotification);
     s_yaw->setValue(rotator_getYaw(hRot), dontSendNotification);
     s_pitch->setValue(rotator_getPitch(hRot), dontSendNotification);
@@ -520,6 +520,7 @@ PluginEditor::~PluginEditor()
     fileComp = nullptr;
     //[/Destructor]
 }
+
 
 //==============================================================================
 void PluginEditor::paint (juce::Graphics& g)
