@@ -62,6 +62,8 @@ public:
     PluginEditor (PluginProcessor* ownerFilter);
     ~PluginEditor() override;
 
+
+
     //==============================================================================
     //[UserMethods]     -- You can add your own custom methods in this section.
 

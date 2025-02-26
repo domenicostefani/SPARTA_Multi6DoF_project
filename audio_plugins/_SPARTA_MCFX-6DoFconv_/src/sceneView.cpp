@@ -104,9 +104,9 @@ void sceneView::paint (juce::Graphics& g)
 	// Y from top to bottom
 	//
 	// Listener axis directions:
-	// X from right to left
-	// Y from bottom to top (top view)
-	// Z from bottom to top (side view)
+	// X from bottom to top (top view)
+	// Y from right to left
+	// Z from bottom to top (rear view)
 
     juce::Rectangle<float> lstIcon;
 
@@ -121,7 +121,7 @@ void sceneView::paint (juce::Graphics& g)
         xAxisLabel = String("Y");
         yAxisLabel = String("X");
     }
-    else{ // SIDE VIEW
+    else{ // REAR VIEW
         xp_idx = 1;  /* Y */
         yp_idx = 2;  /* Z */
         xAxisLabel = String("Y");
@@ -242,7 +242,7 @@ void sceneView::mouseDown (const juce::MouseEvent& e)
         xp_idx = 1;  /* Y */
         yp_idx = 0;  /* X */
     }
-    else { // SIDE VIEW
+    else { // REAR VIEW
         xp_idx = 1;  /* Y */
         yp_idx = 2;  /* Z */
     }
@@ -269,7 +269,7 @@ void sceneView::mouseDrag (const juce::MouseEvent& e)
         xp_idx = 1;  /* Y */
         yp_idx = 0;  /* X */
     }
-    else { // SIDE VIEW
+    else { // REAR VIEW
         xp_idx = 1;  /* Y */
         yp_idx = 2;  /* Z */
     }

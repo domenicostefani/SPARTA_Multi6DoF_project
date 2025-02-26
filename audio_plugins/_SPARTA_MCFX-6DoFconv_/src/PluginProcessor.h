@@ -129,6 +129,11 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
 
+	bool isEditorOpen() const {
+        return getActiveEditor() != nullptr;
+    }
+
+
     //==============================================================================
     const juce::String getName() const override;
 
