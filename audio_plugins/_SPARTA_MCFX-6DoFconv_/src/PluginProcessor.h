@@ -41,6 +41,8 @@ enum {
     k_room_size_y,
     k_room_size_z,
 
+	k_oscPortIdParam,  // OSC port ID parameter
+
 	k_param_workaround, // needed to ensure that when a parameter is set by the host, the "setParameter()" method is called
 
 	k_NumOfParameters
@@ -174,6 +176,8 @@ public:
 	juce::AudioParameterFloat* room_size_x;
 	juce::AudioParameterFloat* room_size_y;
 	juce::AudioParameterFloat* room_size_z;
+    juce::AudioParameterFloat* oscPortIdParam;
+
 
 private:
     //==============================================================================

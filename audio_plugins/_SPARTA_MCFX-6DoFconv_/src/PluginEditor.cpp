@@ -172,7 +172,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     te_oscport->setTooltip (TRANS("OSC addresses: /xyz [m]; /quat [-1,1]; /xyzquat [m][-1, 1]; /ypr [deg]; /xyzypr [m][deg]; /sofafile [absolute file path]."));
     te_oscport->setMultiLine (false);
     te_oscport->setReturnKeyStartsNewLine (false);
-    te_oscport->setReadOnly (false);
+    te_oscport->setReadOnly (true);
     te_oscport->setScrollbarsShown (true);
     te_oscport->setCaretVisible (false);
     te_oscport->setPopupMenuEnabled (true);
@@ -1648,7 +1648,9 @@ void PluginEditor::timerCallback()
 
     /* check if OSC port has changed */
     if (hVst->getOscPortID() != te_oscport->getText().getIntValue())
-        hVst->setOscPortID(te_oscport->getText().getIntValue());
+        //hVst->setOscPortID(te_oscport->getText().getIntValue());
+        te_oscport->setText(String(hVst->getOscPortID()), dontSendNotification);
+
 }
 
 void PluginEditor::updateCrossfadeRange() {

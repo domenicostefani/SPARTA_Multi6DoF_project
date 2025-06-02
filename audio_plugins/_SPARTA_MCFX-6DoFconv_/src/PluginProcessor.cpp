@@ -122,6 +122,12 @@ PluginProcessor::PluginProcessor() :
 		0.0f,   // minimum value
 		1.0f,   // maximum value
 		0.5f)); // default value
+	// Parameter 14
+    //addParameter(oscPortIdParam = new juce::AudioParameterFloat("oscPortIdParam",  // parameterID
+    //    "oscPortIdParam",  // parameter name
+    //    0.0f,           // minimum value
+    //    1.0f,           // maximum value
+    //    0.5f));         // default value
 
 }
 
@@ -210,7 +216,7 @@ void PluginProcessor::oscMessageReceived(const OSCMessage& message)
         
         if (message[0].isString())
 		{
-            // DBG("SOFA file name received");
+            DBG("SOFA file name received");
 
 			// Get file path string from OSC message
             String directory		= message[0].getString(); 
@@ -324,6 +330,10 @@ float PluginProcessor::getParameter(int index)
         return (mcfxConv_getMaxDimension(hMCFXCnv, 2) - mcfxConv_getMinDimension(hMCFXCnv, 2));
     }
 
+	if (index == k_oscPortIdParam) {
+        return float(osc_port_ID);
+    }
+
     // otherwise
     return 0.0f;
 }
@@ -408,6 +418,15 @@ void PluginProcessor::setParameter (int index, float newValue)
 		newValueScaled = ( newValue - 0.5 ) * 360.0f;
 		rotator_setRoll( hRot, newValueScaled );
 	}
+
+	if (index == k_oscPortIdParam) {
+        newValueScaled = newValue * 65535.0f;
+        if (osc_port_ID != (int)newValueScaled) {
+            //hEditor.te_oscport.setText(String(osc_port_ID), dontSendNotification);
+
+			setOscPortID((int)newValueScaled);
+        }
+    }
 
 	//refreshWindow = true;
 }
