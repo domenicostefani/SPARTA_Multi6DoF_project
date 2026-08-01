@@ -33,7 +33,7 @@ jobs:
           cp -r "$MKL_DIR"/* "C:/Program Files (x86)/Intel/oneAPI/mkl/latest/include/"
 
       - name: Configure CMake
-        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DSAF_ENABLE_SOFA_READER_MODULE=ON
       - name: Build plugins
         run: cmake --build build --config Release --parallel 4 --target sparta_MCFX-6DoFconv_VST3
 
