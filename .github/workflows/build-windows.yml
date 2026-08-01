@@ -23,10 +23,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Intel oneAPI MKL
-        uses: rscohn2/setup-oneapi@v0
-        with:
-          components: mkl
+      - name: Install Intel oneAPI MKL (Windows)
+        shell: cmd
+        run: |
+          curl.exe -L "https://registrationcenter-download.intel.com/akdlm/irc_nas/19084/w_onemkl_p_2023.0.0.25838_offline.exe" -o onemkl.exe
+          onemkl.exe -s -a -s --eula accept --action install --components intel.oneapi.win.mkl.devel
 
       - name: Configure CMake
         run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
