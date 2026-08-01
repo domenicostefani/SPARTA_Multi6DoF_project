@@ -1,0 +1,42 @@
+name: Windows Build
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure CMake
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build plugins
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Upload VST3 Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SPARTA-Windows-VST3
+          path: build/audio_plugins/**/Release/VST3/*.vst3
+          
+      - name: Upload VST Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SPARTA-Windows-VST
+          path: build/audio_plugins/**/Release/VST/*.dll
