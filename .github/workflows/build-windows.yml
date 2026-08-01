@@ -23,11 +23,13 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Intel oneAPI MKL (Windows)
-        shell: cmd
+      - name: Install Intel oneAPI MKL Headers (Windows)
+        shell: bash
         run: |
-          curl.exe -L "https://registrationcenter-download.intel.com/akdlm/irc_nas/19084/w_onemkl_p_2023.0.0.25838_offline.exe" -o onemkl.exe
-          onemkl.exe -s -a -s --eula accept --action install --components intel.oneapi.win.mkl.devel
+          curl -L -s -o mkl_include.zip "https://files.pythonhosted.org/packages/48/2e/8c71366e2f35ba74704b68be65caec6674472e7913ead5196cc69a15001e/mkl_include-2026.1.0-py2.py3-none-win_amd64.whl"
+          unzip -q mkl_include.zip -d mkl_tmp
+          mkdir -p "C:/Program Files (x86)/Intel/oneAPI/mkl/latest/include"
+          find mkl_tmp -name "mkl.h" -exec dirname {} \; | xargs -I {} cp -r {}/* "C:/Program Files (x86)/Intel/oneAPI/mkl/latest/include/"
 
       - name: Configure CMake
         run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
