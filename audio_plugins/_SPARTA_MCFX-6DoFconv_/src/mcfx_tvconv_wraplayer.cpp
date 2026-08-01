@@ -448,17 +448,28 @@ void mcfxConv_create(
             if (!curXfdInfo->isProcessing) {
                 freeConvolver = conv_idx;
             }
-            if (strategy == ConvolverStealingStrategy::LOWEST_GAIN) {
-                if (curXfdInfo->gain.getCurrentValue() < h->mtxconv_xfd_info_s->getUnchecked(victimCandidate)->gain.getCurrentValue()) {
-                    victimCandidate = conv_idx;
-                }
-            } else if (strategy == ConvolverStealingStrategy::OLDEST) {
-                if (curXfdInfo->age > h->mtxconv_xfd_info_s->getUnchecked(victimCandidate)->age) {
-                    victimCandidate = conv_idx;
+        }
+
+        victimCandidate = -1;  // Candidate for stealing, depending on the strategy
+        for (int conv_idx = 0; conv_idx < h->mtxconv_xfd_info_s->size(); conv_idx++) {
+            if (conv_idx == oldPosConvolverIdx) continue;
+            
+            CrossfadedConvInfo* curXfdInfo = h->mtxconv_xfd_info_s->getUnchecked(conv_idx);
+            
+            if (victimCandidate == -1) {
+                victimCandidate = conv_idx;
+            } else {
+                if (strategy == ConvolverStealingStrategy::LOWEST_GAIN) {
+                    if (curXfdInfo->gain.getCurrentValue() < h->mtxconv_xfd_info_s->getUnchecked(victimCandidate)->gain.getCurrentValue()) {
+                        victimCandidate = conv_idx;
+                    }
+                } else if (strategy == ConvolverStealingStrategy::OLDEST) {
+                    if (curXfdInfo->age > h->mtxconv_xfd_info_s->getUnchecked(victimCandidate)->age) {
+                        victimCandidate = conv_idx;
+                    }
                 }
             }
-        }
-        
+        }        
         // After having checked all convolvers, we must have found the convolver that was handling the last position
         // Otherwise, we have a bug in the code, as lastPos turned out to be invalid
         #ifdef EXTREME_DEBUGGING_CHANGEPOSISSUE
