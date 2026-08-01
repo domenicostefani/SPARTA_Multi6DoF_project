@@ -43,6 +43,9 @@ option(SAF_BUILD_EXAMPLES "Build SAF examples."   ON)
 add_subdirectory(SDKs) 
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/SDKs/VST2_SDK")
     juce_set_vst2_sdk_path(${CMAKE_CURRENT_SOURCE_DIR}/SDKs/VST2_SDK)
+    set(SPARTA_PLUGIN_FORMATS VST VST3 CACHE STRING "Plugin formats to build")
+else()
+    set(SPARTA_PLUGIN_FORMATS VST3 CACHE STRING "Plugin formats to build")
 endif()
 
 # Configure SPARTA plugins
