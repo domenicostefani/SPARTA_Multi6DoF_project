@@ -32,11 +32,19 @@ jobs:
           MKL_DIR=$(dirname $(find mkl_tmp -name "mkl.h" | head -n 1))
           cp -r "$MKL_DIR"/* "C:/Program Files (x86)/Intel/oneAPI/mkl/latest/include/"
 
+      - name: Install Intel oneAPI MKL Static (Windows)
+        shell: bash
+        run: |
+          curl -L -s -o mkl_static.zip "https://files.pythonhosted.org/packages/13/de/947be8379312d458a2c78c3895b3e70461db1c8e5bf0c8d37fba0e756f22/mkl_static-2026.1.0-py2.py3-none-win_amd64.whl"
+          unzip -q mkl_static.zip -d mkl_static_tmp
+          mkdir -p "C:/Program Files (x86)/Intel/oneAPI/mkl/latest/lib/intel64"
+          cp -r mkl_static_tmp/mkl_static-2026.1.0.data/data/Library/lib/* "C:/Program Files (x86)/Intel/oneAPI/mkl/latest/lib/intel64/"
+
       - name: Install FFTW3 (Windows)
         run: vcpkg install fftw3:x64-windows
 
       - name: Configure CMake
-        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DSAF_ENABLE_SOFA_READER_MODULE=ON -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DSAF_ENABLE_SOFA_READER_MODULE=ON -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DINTEL_MKL_LIB="C:/Program Files (x86)/Intel/oneAPI/mkl/latest/lib/intel64/mkl_intel_lp64.lib;C:/Program Files (x86)/Intel/oneAPI/mkl/latest/lib/intel64/mkl_sequential.lib;C:/Program Files (x86)/Intel/oneAPI/mkl/latest/lib/intel64/mkl_core.lib"
       - name: Build plugins
         run: cmake --build build --config Release --parallel 4 --target sparta_MCFX-6DoFconv_VST3
 
