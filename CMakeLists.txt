@@ -41,7 +41,9 @@ option(SAF_BUILD_EXAMPLES "Build SAF examples."   ON)
 
 # Add JUCE, Spatial_Audio_Framework, and VST2_SDK to the project
 add_subdirectory(SDKs) 
-juce_set_vst2_sdk_path(${CMAKE_CURRENT_SOURCE_DIR}/SDKs/VST2_SDK)
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/SDKs/VST2_SDK")
+    juce_set_vst2_sdk_path(${CMAKE_CURRENT_SOURCE_DIR}/SDKs/VST2_SDK)
+endif()
 
 # Configure SPARTA plugins
 add_subdirectory(audio_plugins)
