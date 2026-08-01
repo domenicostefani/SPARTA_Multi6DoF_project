@@ -23,8 +23,13 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install Intel oneAPI MKL
+        uses: rscohn2/setup-oneapi@v0
+        with:
+          components: mkl
+
       - name: Configure CMake
-        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DSAF_PERFORMANCE_LIB=SAF_USE_OPEN_BLAS_AND_LAPACKE
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
       - name: Build plugins
         run: cmake --build build --config Release --parallel 4
 
