@@ -11,9 +11,7 @@
 #include <JuceHeader.h>
 #include "mcfx_tvconv_wraplayer.h"
 #include "rotator.h"
-#include "STLParser.h"
 #include <string.h>
-#include <mutex>
 #define BUILD_VER_SUFFIX "alpha" /* String to be added before the version name on the GUI (beta, alpha etc..) */
 #ifndef MIN
 # define MIN(a,b) (( (a) < (b) ) ? (a) : (b))
@@ -89,29 +87,9 @@ public:
     int getOscPortID() { return osc_port_ID; }
     bool getOscPortConnected() { return osc_connected; }
     
-    std::vector<STLTriangle> getStlTriangles() {
-        std::lock_guard<std::mutex> lock(stlMutex);
-        return currentStlTriangles;
-    }
-    bool popStlChanged() {
-        return stlChanged.exchange(false);
-    }
-    
-    std::atomic<bool> newOscLog { false };
-    juce::String getLastOscLog() {
-        std::lock_guard<std::mutex> lock(oscLogMutex);
-        return lastOscLog;
-    }
     
 private:
     void* hMCFXCnv;         /* MCFX wrapper handle */
-    std::vector<STLTriangle> currentStlTriangles;
-    std::mutex stlMutex;
-    
-    juce::String lastOscLog;
-    std::mutex oscLogMutex;
-    
-    std::atomic<bool> stlChanged { false };
     void* hRot;           /* rotator handle */
     int nNumInputs;       /* current number of input channels */
     int nNumOutputs;      /* current number of output channels */

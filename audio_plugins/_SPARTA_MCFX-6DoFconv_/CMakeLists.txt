@@ -6,7 +6,7 @@ message(STATUS "  ${PROJECT_NAME}")
 
 
 
-option(SAF_ENABLE_SOFA_READER_MODULE "Enable the SAF SOFA READER module" OFF) # TODO: remove if the MCFX convolver wrapper makes it into SAF
+option(SAF_ENABLE_SOFA_READER_MODULE "Enable the SAF SOFA READER module" ON) # TODO: remove if the MCFX convolver wrapper makes it into SAF
 
 IF(UNIX AND NOT APPLE AND NOT ANDROID)
 	SET(WITH_ZITA_CONVOLVER FALSE CACHE BOOL "build with zita-convolver (better performance under linux)")

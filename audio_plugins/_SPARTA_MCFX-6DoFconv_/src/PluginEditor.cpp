@@ -362,7 +362,14 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     btn_halveCrossfade->setBounds (371, 334, 26, 20);
 
-
+    oscLogLabel.reset (new juce::Label ("new label", "OSC Log: "));
+    addAndMakeVisible (oscLogLabel.get());
+    oscLogLabel->setFont (juce::Font (12.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
+    oscLogLabel->setJustificationType (juce::Justification::centredLeft);
+    oscLogLabel->setEditable (false, false, false);
+    oscLogLabel->setColour (juce::Label::textColourId, juce::Colours::white);
+    oscLogLabel->setColour (juce::Label::backgroundColourId, juce::Colour (0x00000000));
+    oscLogLabel->setBounds(10, 470, 840, 20);
     //[UserPreSize]
     box_maxpart->setColour(ComboBox::textColourId, Colours::darkgrey);
     te_oscport->setJustification(juce::Justification::centred);
@@ -1599,6 +1606,15 @@ void PluginEditor::timerCallback()
     s_yaw->setValue(rotator_getYaw(hRot), dontSendNotification);
     s_pitch->setValue(rotator_getPitch(hRot), dontSendNotification);
     s_roll->setValue(rotator_getRoll(hRot), dontSendNotification);
+
+    if (hVst->popStlChanged()) {
+        sceneWindow->setStlTriangles(hVst->getStlTriangles());
+    }
+
+    if (hVst->newOscLog.exchange(false)) {
+        oscLogLabel->setText("OSC Log: " + hVst->getLastOscLog(), dontSendNotification);
+    }
+
     label_hostBlockSize->setText(String(mcfxConv_getHostBlockSize(hTVC)), dontSendNotification);
     label_NInputs->setText(String(mcfxConv_getMinInCh(hTVC)), dontSendNotification);
     SL_crossfadeTimeMs->setValue(mcfxConv_getCrossfadeTime_ms(hTVC), dontSendNotification);
@@ -1667,6 +1683,15 @@ void PluginEditor::timerCallback()
             refreshDecimationCounter = 25;
             sceneWindow->refreshSceneView();
         }
+    }
+
+    if (hVst->getRefreshWindow()) {
+        if (strcmp(mcfxConv_getSofaFilePath(hTVC), "no_file") != 0) {
+            fileComp->setCurrentFile(String(mcfxConv_getSofaFilePath(hTVC)), true, dontSendNotification);
+            refreshCoords();
+            sceneWindow->refreshSceneView();
+        }
+        hVst->setRefreshWindow(false);
     }
 
     /* check if OSC port has changed */

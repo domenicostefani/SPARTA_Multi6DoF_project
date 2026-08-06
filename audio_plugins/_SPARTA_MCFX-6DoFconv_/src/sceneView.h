@@ -82,6 +82,11 @@ public:
         computeRoomDims();
         repaint();
     }
+    void setStlTriangles(const std::vector<STLTriangle>& triangles) {
+        stlTriangles = triangles;
+        computeRoomDims();
+        repaint();
+    }
     void setFitSTLToBounds(bool fit) {
         fitSTLToBounds = fit;
         computeRoomDims();

@@ -213,6 +213,7 @@ private:
     std::unique_ptr<juce::Slider> SL_crossfadeTimeMs;
     std::unique_ptr<juce::TextButton> btn_doubleCrossfade;
     std::unique_ptr<juce::TextButton> btn_halveCrossfade;
+    std::unique_ptr<juce::Label> oscLogLabel;
 
 
     //==============================================================================

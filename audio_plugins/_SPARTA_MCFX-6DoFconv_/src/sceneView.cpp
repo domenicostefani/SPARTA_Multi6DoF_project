@@ -112,7 +112,7 @@ void sceneView::paint (juce::Graphics& g)
 
     computeRoomDims();
 
-    int xp_idx, yp_idx;
+    int xp_idx = 0, yp_idx = 0;
     String xAxisLabel, yAxisLabel;
 
     if(topOrSideView==TOP_VIEW){

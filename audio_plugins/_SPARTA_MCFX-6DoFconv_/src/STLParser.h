@@ -60,11 +60,13 @@ public:
                 }
             }
         }
-        // Invert X-axis
+        // Invert X and Y axes
         for (auto& t : triangles) {
             t.normal.x = -t.normal.x;
+            t.normal.y = -t.normal.y;
             for (int i = 0; i < 3; ++i) {
                 t.v[i].x = -t.v[i].x;
+                t.v[i].y = -t.v[i].y;
             }
         }
         
