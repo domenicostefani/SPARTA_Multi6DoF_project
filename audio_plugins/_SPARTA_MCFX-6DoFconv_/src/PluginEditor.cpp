@@ -369,13 +369,13 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     oscLogLabel->setEditable (false, false, false);
     oscLogLabel->setColour (juce::Label::textColourId, juce::Colours::white);
     oscLogLabel->setColour (juce::Label::backgroundColourId, juce::Colour (0x00000000));
-    oscLogLabel->setBounds(10, 470, 840, 20);
+    oscLogLabel->setBounds(10, 495, 840, 20);
     //[UserPreSize]
     box_maxpart->setColour(ComboBox::textColourId, Colours::darkgrey);
     te_oscport->setJustification(juce::Justification::centred);
     //[/UserPreSize]
 
-    setSize (860, 500);
+    setSize (860, 520);
 
 
     //[Constructor] You can add your own custom stuff here..
@@ -571,7 +571,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 0, y = 316, width = 860, height = 186;
+        int x = 0, y = 316, width = 860, height = 204;
         juce::Colour fillColour1 = juce::Colour (0xff19313f), fillColour2 = juce::Colour (0xff041518);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
