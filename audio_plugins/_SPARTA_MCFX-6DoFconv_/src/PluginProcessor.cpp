@@ -122,6 +122,12 @@ PluginProcessor::PluginProcessor() :
 		0.0f,   // minimum value
 		1.0f,   // maximum value
 		0.5f)); // default value
+	// Parameter 14
+	addParameter(oscPortIdParam = new juce::AudioParameterFloat("oscPortIdParam", // parameterID
+		"oscPortIdParam", // parameter name
+		0.0f,   // minimum value
+		1.0f,   // maximum value
+		DEFAULT_OSC_PORT / 65535.0f)); // default value
 
 }
 
@@ -358,6 +364,10 @@ float PluginProcessor::getParameter(int index)
     {
         return (mcfxConv_getMaxDimension(hMCFXCnv, 2) - mcfxConv_getMinDimension(hMCFXCnv, 2));
     }
+    
+    if (index == k_oscPortIdParam) {
+        return float(osc_port_ID) / 65535.0f;
+    }
 
     // otherwise
     return 0.0f;
@@ -379,7 +389,7 @@ const String PluginProcessor::getParameterName (int index)
   //      case k_room_size_x:		return "room_size_x";
   //      case k_room_size_y:		return "room_size_y";
   //      case k_room_size_z:		return "room_size_z";
-	
+        case k_oscPortIdParam:  return "oscPortIdParam";
         default: return "NULL";
     }
 	//return "NULL";
@@ -443,6 +453,14 @@ void PluginProcessor::setParameter (int index, float newValue)
 		newValueScaled = ( newValue - 0.5 ) * 360.0f;
 		rotator_setRoll( hRot, newValueScaled );
 	}
+
+	if (index == k_oscPortIdParam) {
+        newValueScaled = newValue * 65535.0f;
+        if (osc_port_ID != (int)newValueScaled) {
+			setOscPortID((int)newValueScaled);
+            refreshWindow = true; // ensure UI text field updates
+        }
+    }
 
 	//refreshWindow = true;
 }

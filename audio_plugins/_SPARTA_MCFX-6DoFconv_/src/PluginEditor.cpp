@@ -1695,8 +1695,17 @@ void PluginEditor::timerCallback()
     }
 
     /* check if OSC port has changed */
-    if (hVst->getOscPortID() != te_oscport->getText().getIntValue())
-        hVst->setOscPortID(te_oscport->getText().getIntValue());
+    if (te_oscport->hasKeyboardFocus(true)) {
+        if (hVst->getOscPortID() != te_oscport->getText().getIntValue()) {
+            float paramVal = (float)te_oscport->getText().getIntValue() / 65535.0f;
+            hVst->setParameterNotifyingHost(k_oscPortIdParam, paramVal);
+            // setParameterNotifyingHost will trigger setParameter which calls setOscPortID
+        }
+    } else {
+        if (hVst->getOscPortID() != te_oscport->getText().getIntValue()) {
+            te_oscport->setText(String(hVst->getOscPortID()), dontSendNotification);
+        }
+    }
 }
 
 void PluginEditor::updateCrossfadeRange() {
