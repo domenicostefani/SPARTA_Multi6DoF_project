@@ -11,7 +11,9 @@
 #include <JuceHeader.h>
 #include "mcfx_tvconv_wraplayer.h"
 #include "rotator.h"
+#include "STLParser.h"
 #include <string.h>
+#include <mutex>
 #define BUILD_VER_SUFFIX "alpha" /* String to be added before the version name on the GUI (beta, alpha etc..) */
 #ifndef MIN
 # define MIN(a,b) (( (a) < (b) ) ? (a) : (b))
@@ -40,9 +42,7 @@ enum {
     k_room_size_x,
     k_room_size_y,
     k_room_size_z,
-
 	k_oscPortIdParam,  // OSC port ID parameter
-
 	k_param_workaround, // needed to ensure that when a parameter is set by the host, the "setParameter()" method is called
 
 	k_NumOfParameters
@@ -55,19 +55,19 @@ class PluginProcessor  : public AudioProcessor,
                          public VSTCallbackHandler
 {
 public:
-
     /* Set/Get functions */
-    void*	getFXHandle()					{ return hMCFXCnv; }
-    void*	getFXHandle_rot()				{ return hRot; }
-    int		getCurrentBlockSize()			{ return nHostBlockSize; }
-    int		getCurrentNumInputs()			{ return nNumInputs; }
-    int		getCurrentNumOutputs()			{ return nNumOutputs; }
-    void	setEnableRotation(bool newState){ enable_rotation = newState; }
-    bool	getEnableRotation()				{ return enable_rotation; }
-    
-	// PluginEditor Handle and setter method
+    void* getFXHandle() { return hMCFXCnv; }
+    void* getFXHandle_rot() { return hRot; }
+    int getCurrentBlockSize(){ return nHostBlockSize; }
+    int getCurrentNumInputs(){ return nNumInputs; }
+    int getCurrentNumOutputs(){ return nNumOutputs; }
+    void setEnableRotation(bool newState){ enable_rotation = newState; }
+    bool getEnableRotation(){ return enable_rotation; }
+	
+    // PluginEditor Handle and setter method
 	void*	hEditor = nullptr;				/* PluginEditor handle */
 	void	setEditorHandle(void* newEditor) { hEditor = newEditor; }
+    
     
     /* For refreshing window during automation */
     bool refreshWindow;
@@ -94,19 +94,38 @@ public:
     int getOscPortID() { return osc_port_ID; }
     bool getOscPortConnected() { return osc_connected; }
     
+    std::vector<STLTriangle> getStlTriangles() {
+        std::lock_guard<std::mutex> lock(stlMutex);
+        return currentStlTriangles;
+    }
+    bool popStlChanged() {
+        return stlChanged.exchange(false);
+    }
+    
+    std::atomic<bool> newOscLog { false };
+    juce::String getLastOscLog() {
+        std::lock_guard<std::mutex> lock(oscLogMutex);
+        return lastOscLog;
+    }
     
 private:
-	
-    void*				hMCFXCnv;			/* MCFX wrapper handle */
-    void*				hRot;				/* rotator handle */
-    int					nNumInputs;			/* current number of input channels */
-    int					nNumOutputs;		/* current number of output channels */
-    int					nSampleRate;		/* current host sample rate */
-    int					nHostBlockSize;		/* typical host block size to expect, in samples */
-    OSCReceiver			osc;
-    bool				osc_connected;
-    int					osc_port_ID;
-    bool				enable_rotation;
+    void* hMCFXCnv;         /* MCFX wrapper handle */
+    std::vector<STLTriangle> currentStlTriangles;
+    std::mutex stlMutex;
+    
+    juce::String lastOscLog;
+    std::mutex oscLogMutex;
+    
+    std::atomic<bool> stlChanged { false };
+    void* hRot;           /* rotator handle */
+    int nNumInputs;       /* current number of input channels */
+    int nNumOutputs;      /* current number of output channels */
+    int nSampleRate;      /* current host sample rate */
+    int nHostBlockSize;   /* typical host block size to expect, in samples */
+    OSCReceiver osc;
+    bool osc_connected;
+    int osc_port_ID;
+    bool enable_rotation;
     
     
 /***************************************************************************\
@@ -131,7 +150,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
 
-	bool isEditorOpen() const {
+	    bool isEditorOpen() const {
         return getActiveEditor() != nullptr;
     }
 
@@ -176,8 +195,7 @@ public:
 	juce::AudioParameterFloat* room_size_x;
 	juce::AudioParameterFloat* room_size_y;
 	juce::AudioParameterFloat* room_size_z;
-    juce::AudioParameterFloat* oscPortIdParam;
-
+	juce::AudioParameterFloat* oscPortIdParam;
 
 private:
     //==============================================================================

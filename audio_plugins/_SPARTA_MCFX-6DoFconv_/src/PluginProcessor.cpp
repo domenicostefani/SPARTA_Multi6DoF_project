@@ -122,12 +122,12 @@ PluginProcessor::PluginProcessor() :
 		0.0f,   // minimum value
 		1.0f,   // maximum value
 		0.5f)); // default value
-	// Parameter 14
-    //addParameter(oscPortIdParam = new juce::AudioParameterFloat("oscPortIdParam",  // parameterID
-    //    "oscPortIdParam",  // parameter name
-    //    0.0f,           // minimum value
-    //    1.0f,           // maximum value
-    //    0.5f));         // default value
+
+		    addParameter(oscPortIdParam = new juce::AudioParameterFloat("oscPortIdParam",  // parameterID
+       "oscPortIdParam",  // parameter name
+       0.0f,           // minimum value
+       9999.0f,           // maximum value
+       0.5f));         // default value
 
 }
 
@@ -143,6 +143,21 @@ PluginProcessor::~PluginProcessor()
 
 void PluginProcessor::oscMessageReceived(const OSCMessage& message)
 {
+    juce::String msgStr = message.getAddressPattern().toString();
+    for (int i=0; i<message.size(); i++) {
+        if (message[i].isFloat32()) msgStr += " " + juce::String(message[i].getFloat32());
+        else if (message[i].isString()) msgStr += " " + message[i].getString();
+        else if (message[i].isInt32()) msgStr += " " + juce::String(message[i].getInt32());
+    }
+    
+    {
+        std::lock_guard<std::mutex> lock(oscLogMutex);
+        lastOscLog = msgStr;
+        newOscLog = true;
+    }
+    
+    DBG("PluginProcessor received OSC: " + msgStr);
+    
     if (message.size() == 3 && message.getAddressPattern().toString().compare("/xyz") == 0 ) {
         if (message[0].isFloat32())
             setParameterRaw(0, message[0].getFloat32());
@@ -150,6 +165,56 @@ void PluginProcessor::oscMessageReceived(const OSCMessage& message)
             setParameterRaw(1, message[1].getFloat32());
         if (message[2].isFloat32())
             setParameterRaw(2, message[2].getFloat32());
+        return;
+    }
+    
+    else if (message.getAddressPattern().toString().compare("/stlpath") == 0) {
+        juce::String path = "";
+        for (int i = 0; i < message.size(); ++i) {
+            if (message[i].isString()) {
+                if (path.isNotEmpty()) path += " ";
+                path += message[i].getString();
+            }
+        }
+        
+        if (path.isNotEmpty()) {
+            DBG("Received STL path via OSC: " + path);
+            juce::File stlFile(path);
+            if (!stlFile.existsAsFile()) {
+                DBG("STL file does not exist!");
+                return;
+            }
+            auto triangles = STLParser::parseSTL(stlFile);
+            DBG("Parsed " + String(triangles.size()) + " triangles from STL");
+            {
+                std::lock_guard<std::mutex> lock(stlMutex);
+                currentStlTriangles = std::move(triangles);
+                stlChanged = true;
+            }
+        }
+        return;
+    }
+    
+    else if (message.getAddressPattern().toString().compare("/sofafile") == 0) {
+        juce::String path = "";
+        for (int i = 0; i < message.size(); ++i) {
+            if (message[i].isString()) {
+                if (path.isNotEmpty()) path += " ";
+                path += message[i].getString();
+            }
+        }
+        
+        if (path.isNotEmpty()) {
+            DBG("Received SOFA path via OSC: " + path);
+            juce::File sofaFile(path);
+            if (!sofaFile.existsAsFile()) {
+                DBG("SOFA file does not exist!");
+                return;
+            }
+            mcfxConv_setSofaFilePath(hMCFXCnv, path.toUTF8().getAddress());
+            // Need to notify editor to update the label if open, but refreshWindow already exists
+            refreshWindow = true; 
+        }
         return;
     }
     
@@ -206,38 +271,8 @@ void PluginProcessor::oscMessageReceived(const OSCMessage& message)
             rotator_setPitch(hRot, message[4].getFloat32());
         if (message[5].isFloat32())
             rotator_setRoll(hRot, message[5].getFloat32());
-
         return;
     }
-
-	// SOFA file path received from OSC interface. Load the new SOFA file path inside the MCFX convolver wrapper
-	else if (message.size() == 1 && message.getAddressPattern().toString().compare("/sofafile") == 0 ) 
-	{
-        
-        if (message[0].isString())
-		{
-            DBG("SOFA file name received");
-
-			// Get file path string from OSC message
-            String directory		= message[0].getString(); 
-			
-			// Convert to UTF8
-            const char* new_cstring = (const char*)directory.toUTF8();
-            
-			// Set the new SOFA file path inside the MCFX convolver wrapper
-            mcfxConv_setSofaFilePath(getFXHandle(), new_cstring);
-            
-			// Get the editor handle
-            PluginEditor* hEditorLocal = (PluginEditor*)hEditor;
-            
-			// If the editor is open
-            if (this->isEditorOpen()) {
-                // Refresh the path in GUI file component
-                hEditorLocal->refreshFileComp();
-            }
-		}
-		return;
-	}
 }
 
 const juce::String PluginProcessor::getName() const
@@ -419,14 +454,14 @@ void PluginProcessor::setParameter (int index, float newValue)
 		rotator_setRoll( hRot, newValueScaled );
 	}
 
-	if (index == k_oscPortIdParam) {
+	    if (index == k_oscPortIdParam) {
         newValueScaled = newValue * 65535.0f;
         if (osc_port_ID != (int)newValueScaled) {
             //hEditor.te_oscport.setText(String(osc_port_ID), dontSendNotification);
 
 			setOscPortID((int)newValueScaled);
         }
-    }
+	}
 
 	//refreshWindow = true;
 }
@@ -475,24 +510,13 @@ void PluginProcessor::releaseResources()
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
+
 bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
     return true;
   #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-        return false;
-
-    // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-   #endif
-
     return true;
   #endif
 }
@@ -508,6 +532,14 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     float** bufferData = buffer.getArrayOfWritePointers();
 
     if (enable_rotation) {
+        int numConvolverOutputChannels = mcfxConv_getNumOutputChannels(hMCFXCnv);
+        if (numConvolverOutputChannels) {
+            int expected_order = sqrt(numConvolverOutputChannels) - 1;
+            if (rotator_getOrder(hRot) != expected_order) {
+                rotator_setOrder(hRot, expected_order);
+            }
+        }
+        
         float* pFrameData[MAX_NUM_CHANNELS];
         int frameSize = rotator_getFrameSize();
 
@@ -535,18 +567,13 @@ bool PluginProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* PluginProcessor::createEditor()
 {
-    
-	// Create a new instance of the PluginEditor
-	PluginEditor* localEditorHandle = new PluginEditor(this);
+    PluginEditor* localEditorHandle = new PluginEditor(this);
     
 	// Save the Editor handle to this Processor object
 	setEditorHandle((void*)localEditorHandle);
     
 	// Return the Editor handle
 	return localEditorHandle;
- 
-    //return (AudioProcessorEditor*) hEditor;
-    //return new PluginEditor(this);
 }
 
 //==============================================================================

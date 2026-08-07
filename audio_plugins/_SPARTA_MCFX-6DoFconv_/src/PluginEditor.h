@@ -62,8 +62,6 @@ public:
     PluginEditor (PluginProcessor* ownerFilter);
     ~PluginEditor() override;
 
-
-
     //==============================================================================
     //[UserMethods]     -- You can add your own custom methods in this section.
 
@@ -84,12 +82,6 @@ public:
     void sliderValueChanged (juce::Slider* sliderThatWasMoved) override;
     void comboBoxChanged (juce::ComboBox* comboBoxThatHasChanged) override;
     void buttonClicked (juce::Button* buttonThatWasClicked) override;
-    
-	// Refresh SOFA file path on GUI if it changes externally (via OSC)
-	void refreshFileComp(void) {
-        fileComp->setCurrentFile(String(mcfxConv_getSofaFilePath(hTVC)), true, dontSendNotification);
-        refreshCoords();
-    };
 
 
 
@@ -157,16 +149,23 @@ private:
 
     /* sofa loading */
     std::unique_ptr<juce::FilenameComponent> fileComp;
+    std::unique_ptr<juce::FilenameComponent> stlFileComp;
     SAF_MCFX_ERROR_CODES mcfxConvError;
 
-    /* sofa file loading */
-     void filenameComponentChanged (FilenameComponent*) override  {
-         partitionComboboxesSet = false;
-         String directory = fileComp->getCurrentFile().getFullPathName();
-         const char* new_cstring = (const char*)directory.toUTF8();
-         mcfxConv_setSofaFilePath(hTVC, new_cstring);
-         refreshCoords();
-
+    /* file loading */
+     void filenameComponentChanged (FilenameComponent* fnComp) override  {
+         if (fnComp == fileComp.get()) {
+             partitionComboboxesSet = false;
+             String directory = fileComp->getCurrentFile().getFullPathName();
+             const char* new_cstring = (const char*)directory.toUTF8();
+             mcfxConv_setSofaFilePath(hTVC, new_cstring);
+             refreshCoords();
+         }
+         else if (fnComp == stlFileComp.get()) {
+             if (sceneWindow != nullptr) {
+                 sceneWindow->loadSTLFile(stlFileComp->getCurrentFile());
+             }
+         }
      }
 
     /* scene view window */
@@ -205,6 +204,7 @@ private:
     std::unique_ptr<juce::ToggleButton> t_flipPitch;
     std::unique_ptr<juce::ToggleButton> t_flipRoll;
     std::unique_ptr<juce::ToggleButton> TBenableRotation;
+    std::unique_ptr<juce::ToggleButton> t_fitSTL;
     std::unique_ptr<juce::Label> label_NOutputs;
     std::unique_ptr<juce::Label> label_NIRs;
     std::unique_ptr<juce::ComboBox> box_first_part;
@@ -213,6 +213,7 @@ private:
     std::unique_ptr<juce::Slider> SL_crossfadeTimeMs;
     std::unique_ptr<juce::TextButton> btn_doubleCrossfade;
     std::unique_ptr<juce::TextButton> btn_halveCrossfade;
+    std::unique_ptr<juce::Label> oscLogLabel;
 
 
     //==============================================================================
