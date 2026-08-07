@@ -1,0 +1,16 @@
+@@ -19,6 +19,7 @@
+ #include "JuceHeader.h"
+ #include "mcfx_tvconv_wraplayer.h"
+ #include "saf.h"
++#include "STLParser.h"
+ 
+ #define MAX_NUM_CH ( 64 )
+ #define NUM_PARAMETERS ( 13 )
+@@ -124,6 +125,7 @@
+     
+     /* wrapper state */
+     void* hMCFXCnv;
++    std::vector<STLTriangle> currentStlTriangles;
+     
+     /* GUI values */
+     std::atomic<float>* IR_load_status;

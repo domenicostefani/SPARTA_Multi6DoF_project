@@ -112,7 +112,7 @@ void sceneView::paint (juce::Graphics& g)
 
     computeRoomDims();
 
-    int xp_idx, yp_idx;
+    int xp_idx = 0, yp_idx = 0;
     String xAxisLabel, yAxisLabel;
 
     if(topOrSideView==TOP_VIEW){
@@ -121,10 +121,22 @@ void sceneView::paint (juce::Graphics& g)
         xAxisLabel = String("Y");
         yAxisLabel = String("X");
     }
-    else{ // SIDE VIEW
+    else if (topOrSideView == REAR_VIEW){ // REAR VIEW
         xp_idx = 1;  /* Y */
         yp_idx = 2;  /* Z */
         xAxisLabel = String("Y");
+        yAxisLabel = String("Z");
+    }
+    else if (topOrSideView == LEFT_VIEW){
+        xp_idx = 0;  /* X */
+        yp_idx = 2;  /* Z */
+        xAxisLabel = String("X");
+        yAxisLabel = String("Z");
+    }
+    else if (topOrSideView == RIGHT_VIEW){
+        xp_idx = 0;  /* X */
+        yp_idx = 2;  /* Z */
+        xAxisLabel = String("X");
         yAxisLabel = String("Z");
     }
 
@@ -171,15 +183,49 @@ void sceneView::paint (juce::Graphics& g)
     g.drawText( xAxisLabel, view_x + room_dims_pixels_o[xp_idx]/2.0f+5.0f, view_y+room_dims_pixels_o[yp_idx]+20.0f, 20, 10, Justification::centred, true);
     g.drawText( yAxisLabel, view_x + room_dims_pixels_o[xp_idx] + 20.0f, view_y+room_dims_pixels_o[yp_idx]/2.0f-5.0f, 20, 10, Justification::centred, true);
 
+    bool invert_x = (topOrSideView == RIGHT_VIEW);
+    auto getPointX = [&](float pos) {
+        if (invert_x) return view_x + scale * (pos - room_offset_m[xp_idx]);
+        else return view_x + room_dims_pixels_o[xp_idx] - scale * (pos - room_offset_m[xp_idx]);
+    };
+    auto getPointY = [&](float pos) {
+        return view_y + room_dims_pixels_o[yp_idx] - scale * (pos - room_offset_m[yp_idx]);
+    };
+
+    /* STL Wireframe */
+    if (!stlTriangles.empty()) {
+        auto getCoord = [](const Vec3& v, int idx) -> float {
+            if (idx == 0) return v.x;
+            if (idx == 1) return v.y;
+            return v.z;
+        };
+        g.setColour(Colours::cyan.withAlpha(0.3f));
+        juce::Path stlPath;
+        for (const auto& tri : stlTriangles) {
+            float p0x = getPointX(getCoord(tri.v[0], xp_idx));
+            float p0y = getPointY(getCoord(tri.v[0], yp_idx));
+            float p1x = getPointX(getCoord(tri.v[1], xp_idx));
+            float p1y = getPointY(getCoord(tri.v[1], yp_idx));
+            float p2x = getPointX(getCoord(tri.v[2], xp_idx));
+            float p2y = getPointY(getCoord(tri.v[2], yp_idx));
+            
+            stlPath.startNewSubPath(p0x, p0y);
+            stlPath.lineTo(p1x, p1y);
+            stlPath.lineTo(p2x, p2y);
+            stlPath.closeSubPath();
+        }
+        g.strokePath(stlPath, juce::PathStrokeType(1.0f));
+    }
+
     /* Listener icons */
     int targetIndex = mcfxConv_getListenerPositionIdx(hTVCnv);
     for(int i=0; i<mcfxConv_getNumListenerPositions(hTVCnv); i++){
-        float point_x = view_x + room_dims_pixels_o[xp_idx] - scale*(mcfxConv_getListenerPosition(hTVCnv, i, xp_idx/*Y*/) - room_offset_m[xp_idx]);
-        float point_y = view_y + room_dims_pixels_o[yp_idx] - scale*(mcfxConv_getListenerPosition(hTVCnv, i, yp_idx/*X or Z*/) - room_offset_m[yp_idx]);
+        float point_x = getPointX(mcfxConv_getListenerPosition(hTVCnv, i, xp_idx));
+        float point_y = getPointY(mcfxConv_getListenerPosition(hTVCnv, i, yp_idx));
         if(i==targetIndex){
             lstIcon.setBounds(point_x-iconRadius*1.8f, point_y-iconRadius*1.8f, iconWidth*1.8f, iconWidth*1.8f);
             g.setColour(Colours::white);
-            g.drawText(String(targetIndex), lstIcon.translated(10.0f, -10.0f), Justification::centred);
+            g.drawText(String(targetIndex), juce::Rectangle<float>(point_x + 5.0f, point_y - 20.0f, 40.0f, 20.0f), Justification::left);
             g.setColour(Colours::green);
             g.fillEllipse(lstIcon);
             g.setColour(Colours::lightgrey);
@@ -198,8 +244,8 @@ void sceneView::paint (juce::Graphics& g)
     }
 
     /* Source icon */
-    float point_x = view_x + room_dims_pixels_o[xp_idx] - scale*(mcfxConv_getSourcePosition(hTVCnv, xp_idx/*Y*/) - room_offset_m[xp_idx]);
-    float point_y = view_y + room_dims_pixels_o[yp_idx] - scale*(mcfxConv_getSourcePosition(hTVCnv, yp_idx/*X or Z*/) - room_offset_m[yp_idx]);
+    float point_x = getPointX(mcfxConv_getSourcePosition(hTVCnv, xp_idx));
+    float point_y = getPointY(mcfxConv_getSourcePosition(hTVCnv, yp_idx));
     lstIcon.setBounds(point_x-iconRadius*1.2f, point_y-iconRadius*1.2f, iconWidth*1.2f, iconWidth*1.2f);
     g.setOpacity(0.9f);
     g.setColour(Colours::magenta);
@@ -208,8 +254,8 @@ void sceneView::paint (juce::Graphics& g)
     g.drawEllipse(lstIcon, 1.0f);
 
     /* Target Listener position */
-    point_x = view_x + room_dims_pixels_o[xp_idx] - scale*(mcfxConv_getTargetPosition(hTVCnv, xp_idx/*Y*/) - room_offset_m[xp_idx]);
-    point_y = view_y + room_dims_pixels_o[yp_idx] - scale*(mcfxConv_getTargetPosition(hTVCnv, yp_idx /*X or Z*/) - room_offset_m[yp_idx]);
+    point_x = getPointX(mcfxConv_getTargetPosition(hTVCnv, xp_idx));
+    point_y = getPointY(mcfxConv_getTargetPosition(hTVCnv, yp_idx));
     lstIcon.setBounds(point_x-iconRadius*1.2f, point_y-iconRadius*1.2f, iconWidth*1.2f, iconWidth*1.2f);
     g.setOpacity(0.9f);
     g.setColour(Colours::orange);
@@ -238,16 +284,28 @@ void sceneView::mouseDown (const juce::MouseEvent& e)
     computeRoomDims();
 
     int xp_idx, yp_idx;
+    bool invert_x = false;
+
     if (topOrSideView == TOP_VIEW) {
         xp_idx = 1;  /* Y */
         yp_idx = 0;  /* X */
     }
-    else { // SIDE VIEW
+    else if (topOrSideView == REAR_VIEW) {
         xp_idx = 1;  /* Y */
         yp_idx = 2;  /* Z */
     }
+    else if (topOrSideView == LEFT_VIEW) {
+        xp_idx = 0;  /* X */
+        yp_idx = 2;  /* Z */
+    }
+    else { // RIGHT_VIEW
+        xp_idx = 0;  /* X */
+        yp_idx = 2;  /* Z */
+        invert_x = true;
+    }
 
-    float point_x = view_x + room_dims_pixels_o[xp_idx] - scale * (mcfxConv_getTargetPosition(hTVCnv, xp_idx) - room_offset_m[xp_idx]);
+    float point_x = invert_x ? view_x + scale * (mcfxConv_getTargetPosition(hTVCnv, xp_idx) - room_offset_m[xp_idx])
+                             : view_x + room_dims_pixels_o[xp_idx] - scale * (mcfxConv_getTargetPosition(hTVCnv, xp_idx) - room_offset_m[xp_idx]);
     float point_y = view_y + room_dims_pixels_o[yp_idx] - scale * (mcfxConv_getTargetPosition(hTVCnv, yp_idx) - room_offset_m[yp_idx]);
     recIcon.setBounds(point_x - iconRadius, point_y - iconRadius, iconWidth, iconWidth);
     if (recIcon.expanded(4, 4).contains(e.getMouseDownPosition())) {
@@ -265,13 +323,24 @@ void sceneView::mouseDrag (const juce::MouseEvent& e)
     Point<float> point;
 
     int xp_idx, yp_idx;
+    bool invert_x = false;
+    
     if (topOrSideView == TOP_VIEW) {
         xp_idx = 1;  /* Y */
         yp_idx = 0;  /* X */
     }
-    else { // SIDE VIEW
+    else if (topOrSideView == REAR_VIEW) {
         xp_idx = 1;  /* Y */
         yp_idx = 2;  /* Z */
+    }
+    else if (topOrSideView == LEFT_VIEW) {
+        xp_idx = 0;  /* X */
+        yp_idx = 2;  /* Z */
+    }
+    else { // RIGHT_VIEW
+        xp_idx = 0;  /* X */
+        yp_idx = 2;  /* Z */
+        invert_x = true;
     }
 
     if(targetIconIsClicked){
@@ -279,7 +348,11 @@ void sceneView::mouseDrag (const juce::MouseEvent& e)
         computeRoomDims();
 
         point.setXY((float)e.getPosition().getX() - 2, (float)e.getPosition().getY() - 2);
-        mcfxConv_setTargetPosition(hTVCnv, -(point.getX() - view_x - room_dims_pixels_o[xp_idx]) / scale + room_offset_m[xp_idx], xp_idx);
+        
+        float new_x = invert_x ? (point.getX() - view_x) / scale + room_offset_m[xp_idx]
+                               : -(point.getX() - view_x - room_dims_pixels_o[xp_idx]) / scale + room_offset_m[xp_idx];
+                               
+        mcfxConv_setTargetPosition(hTVCnv, new_x, xp_idx);
         mcfxConv_setTargetPosition(hTVCnv, -(point.getY() - view_y - room_dims_pixels_o[yp_idx]) / scale + room_offset_m[yp_idx], yp_idx);
 
     }
@@ -302,18 +375,46 @@ void sceneView::mouseUp (const juce::MouseEvent& e)
 void sceneView::computeRoomDims()
 {
 
-if (mcfxConv_getNumListenerPositions(hTVCnv) == 0) {
+if (mcfxConv_getNumListenerPositions(hTVCnv) == 0 && (stlTriangles.empty() || !fitSTLToBounds)) {
     room_dims_m[0] = room_dims_m[1] = 1.0f;
     room_dims_m[2] = 0.35f;
     room_offset_m[0] = room_offset_m[1] = room_offset_m[2] = 0.0f;
 }
 else {
-    room_dims_m[0] = MAX(MAX(mcfxConv_getMaxDimension(hTVCnv, 0), mcfxConv_getSourcePosition(hTVCnv, 0)), 0.01f) * 1.2f;
-    room_dims_m[1] = MAX(MAX(mcfxConv_getMaxDimension(hTVCnv, 1), mcfxConv_getSourcePosition(hTVCnv, 1)), 0.01f) * 1.2f;
-    room_dims_m[2] = MAX(MAX(mcfxConv_getMaxDimension(hTVCnv, 2), mcfxConv_getSourcePosition(hTVCnv, 2)), 0.003f) * 1.2f;
-    room_offset_m[0] = floorf(MIN(mcfxConv_getMinDimension(hTVCnv, 0), mcfxConv_getSourcePosition(hTVCnv, 0)) * 0.8f * 10.0f) / 10.0f;
-    room_offset_m[1] = floorf(MIN(mcfxConv_getMinDimension(hTVCnv, 1), mcfxConv_getSourcePosition(hTVCnv, 1)) * 0.8f * 10.0f) / 10.0f;
-    room_offset_m[2] = floorf(MIN(mcfxConv_getMinDimension(hTVCnv, 2), mcfxConv_getSourcePosition(hTVCnv, 2)) * 0.8f * 10.0f) / 10.0f;
+    float max0, max1, max2, min0, min1, min2;
+    if (mcfxConv_getNumListenerPositions(hTVCnv) > 0) {
+        max0 = MAX(MAX(mcfxConv_getMaxDimension(hTVCnv, 0), mcfxConv_getSourcePosition(hTVCnv, 0)), mcfxConv_getTargetPosition(hTVCnv, 0));
+        max1 = MAX(MAX(mcfxConv_getMaxDimension(hTVCnv, 1), mcfxConv_getSourcePosition(hTVCnv, 1)), mcfxConv_getTargetPosition(hTVCnv, 1));
+        max2 = MAX(MAX(mcfxConv_getMaxDimension(hTVCnv, 2), mcfxConv_getSourcePosition(hTVCnv, 2)), mcfxConv_getTargetPosition(hTVCnv, 2));
+
+        min0 = MIN(MIN(mcfxConv_getMinDimension(hTVCnv, 0), mcfxConv_getSourcePosition(hTVCnv, 0)), mcfxConv_getTargetPosition(hTVCnv, 0));
+        min1 = MIN(MIN(mcfxConv_getMinDimension(hTVCnv, 1), mcfxConv_getSourcePosition(hTVCnv, 1)), mcfxConv_getTargetPosition(hTVCnv, 1));
+        min2 = MIN(MIN(mcfxConv_getMinDimension(hTVCnv, 2), mcfxConv_getSourcePosition(hTVCnv, 2)), mcfxConv_getTargetPosition(hTVCnv, 2));
+    } else {
+        max0 = max1 = max2 = -1000000.0f;
+        min0 = min1 = min2 = 1000000.0f;
+    }
+
+    if (fitSTLToBounds) {
+        for (const auto& tri : stlTriangles) {
+            for (int i = 0; i < 3; ++i) {
+                max0 = MAX(max0, tri.v[i].x);
+                max1 = MAX(max1, tri.v[i].y);
+                max2 = MAX(max2, tri.v[i].z);
+                min0 = MIN(min0, tri.v[i].x);
+                min1 = MIN(min1, tri.v[i].y);
+                min2 = MIN(min2, tri.v[i].z);
+            }
+        }
+    }
+
+    room_dims_m[0] = MAX(max0, 0.01f) * 1.2f;
+    room_dims_m[1] = MAX(max1, 0.01f) * 1.2f;
+    room_dims_m[2] = MAX(max2, 0.003f) * 1.2f;
+    
+    room_offset_m[0] = floorf((min0 < 0.0f ? min0 * 1.2f : min0 * 0.8f) * 10.0f) / 10.0f;
+    room_offset_m[1] = floorf((min1 < 0.0f ? min1 * 1.2f : min1 * 0.8f) * 10.0f) / 10.0f;
+    room_offset_m[2] = floorf((min2 < 0.0f ? min2 * 1.2f : min2 * 0.8f) * 10.0f) / 10.0f;
 }
 room_dims_m_o[0] = room_dims_m[0] - room_offset_m[0];
 room_dims_m_o[1] = room_dims_m[1] - room_offset_m[1];

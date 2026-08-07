@@ -193,6 +193,14 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     CBviewMode->setBounds (755, 38, 92, 16);
 
+    stlFileComp.reset(new juce::FilenameComponent("stlFileComp", {},
+        true, false, false,
+        "*.stl", {},
+        "Load STL"));
+    addAndMakeVisible(stlFileComp.get());
+    stlFileComp->addListener(this);
+    stlFileComp->setBounds(655, 38, 92, 20);
+
     s_yaw.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (s_yaw.get());
     s_yaw->setRange (-180, 180, 0.01);
@@ -259,6 +267,13 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     TBenableRotation->addListener (this);
 
     TBenableRotation->setBounds (85, 402, 32, 24);
+
+    t_fitSTL.reset (new juce::ToggleButton ("fit STL"));
+    addAndMakeVisible (t_fitSTL.get());
+    t_fitSTL->setButtonText ("Fit STL bounds");
+    t_fitSTL->addListener (this);
+    t_fitSTL->setToggleState (true, juce::dontSendNotification);
+    t_fitSTL->setBounds (550, 38, 100, 20);
 
     label_NOutputs.reset (new juce::Label ("new label",
                                            juce::String()));
@@ -347,13 +362,20 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     btn_halveCrossfade->setBounds (371, 334, 26, 20);
 
-
+    oscLogLabel.reset (new juce::Label ("new label", "OSC Log: "));
+    addAndMakeVisible (oscLogLabel.get());
+    oscLogLabel->setFont (juce::Font (12.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
+    oscLogLabel->setJustificationType (juce::Justification::centredLeft);
+    oscLogLabel->setEditable (false, false, false);
+    oscLogLabel->setColour (juce::Label::textColourId, juce::Colours::white);
+    oscLogLabel->setColour (juce::Label::backgroundColourId, juce::Colour (0x00000000));
+    oscLogLabel->setBounds(10, 502, 840, 20);
     //[UserPreSize]
     box_maxpart->setColour(ComboBox::textColourId, Colours::darkgrey);
     te_oscport->setJustification(juce::Justification::centred);
     //[/UserPreSize]
 
-    setSize (860, 500);
+    setSize (860, 530);
 
 
     //[Constructor] You can add your own custom stuff here..
@@ -404,7 +426,9 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 	/* fetch current configuration *///////////////////////////////////////////////////////////////////////////////////
     te_oscport->setText(String(hVst->getOscPortID()), dontSendNotification);
     CBviewMode->addItem(TRANS("Top View"), TOP_VIEW+1); /* must start from 1... */
-    CBviewMode->addItem(TRANS("Side View"), SIDE_VIEW+1);
+    CBviewMode->addItem(TRANS("Rear View"), REAR_VIEW+1);
+    CBviewMode->addItem(TRANS("Left View"), LEFT_VIEW+1);
+    CBviewMode->addItem(TRANS("Right View"), RIGHT_VIEW+1);
     CBviewMode->setSelectedId(TOP_VIEW+1, dontSendNotification);
     s_yaw->setValue(rotator_getYaw(hRot), dontSendNotification);
     s_pitch->setValue(rotator_getPitch(hRot), dontSendNotification);
@@ -418,6 +442,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     sceneWindow.reset (new sceneView(ownerFilter, 440, 432));
     addAndMakeVisible (sceneWindow.get());
     sceneWindow->setViewMode(CBviewMode->getSelectedId()-1);
+    sceneWindow->setFitSTLToBounds(t_fitSTL->getToggleState());
     sceneWindow->setBounds (408, 58, 440, 432);
     refreshSceneViewWindow = true;
 
@@ -505,6 +530,7 @@ PluginEditor::~PluginEditor()
     t_flipPitch = nullptr;
     t_flipRoll = nullptr;
     TBenableRotation = nullptr;
+    t_fitSTL = nullptr;
     label_NOutputs = nullptr;
     label_NIRs = nullptr;
     box_first_part = nullptr;
@@ -545,7 +571,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 0, y = 316, width = 860, height = 186;
+        int x = 0, y = 316, width = 860, height = 214;
         juce::Colour fillColour1 = juce::Colour (0xff19313f), fillColour2 = juce::Colour (0xff041518);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
@@ -728,7 +754,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 0, y = 0, width = 2, height = 500;
+        int x = 0, y = 0, width = 2, height = 530;
         juce::Colour strokeColour = juce::Colour (0xffb9b9b9);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
@@ -738,7 +764,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 858, y = 0, width = 2, height = 500;
+        int x = 858, y = 0, width = 2, height = 530;
         juce::Colour strokeColour = juce::Colour (0xffb9b9b9);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
@@ -748,7 +774,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 0, y = 498, width = 860, height = 2;
+        int x = 0, y = 528, width = 860, height = 2;
         juce::Colour strokeColour = juce::Colour (0xffb9b9b9);
         //[UserPaintCustomArguments] Customize the painting arguments here..
         //[/UserPaintCustomArguments]
@@ -842,7 +868,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 415, y = 34, width = 417, height = 31;
+        int x = 415, y = 34, width = 135, height = 31;
         juce::String text (TRANS("Coordinate View [m]"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -850,7 +876,7 @@ void PluginEditor::paint (juce::Graphics& g)
         g.setColour (fillColour);
         g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
         g.drawText (text, x, y, width, height,
-                    juce::Justification::centred, true);
+                    juce::Justification::centredLeft, true);
     }
 
     {
@@ -1523,6 +1549,11 @@ void PluginEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         hVst->setEnableRotation(TBenableRotation->getToggleState());
         //[/UserButtonCode_TBenableRotation]
     }
+    else if (buttonThatWasClicked == t_fitSTL.get())
+    {
+        if (sceneWindow != nullptr)
+            sceneWindow->setFitSTLToBounds(t_fitSTL->getToggleState());
+    }
     else if (buttonThatWasClicked == btn_doubleCrossfade.get())
     {
         //[UserButtonCode_btn_doubleCrossfade] -- add your button handler code here..
@@ -1575,6 +1606,15 @@ void PluginEditor::timerCallback()
     s_yaw->setValue(rotator_getYaw(hRot), dontSendNotification);
     s_pitch->setValue(rotator_getPitch(hRot), dontSendNotification);
     s_roll->setValue(rotator_getRoll(hRot), dontSendNotification);
+
+    if (hVst->popStlChanged()) {
+        sceneWindow->setStlTriangles(hVst->getStlTriangles());
+    }
+
+    if (hVst->newOscLog.exchange(false)) {
+        oscLogLabel->setText("OSC Log: " + hVst->getLastOscLog(), dontSendNotification);
+    }
+
     label_hostBlockSize->setText(String(mcfxConv_getHostBlockSize(hTVC)), dontSendNotification);
     label_NInputs->setText(String(mcfxConv_getMinInCh(hTVC)), dontSendNotification);
     SL_crossfadeTimeMs->setValue(mcfxConv_getCrossfadeTime_ms(hTVC), dontSendNotification);
@@ -1645,9 +1685,27 @@ void PluginEditor::timerCallback()
         }
     }
 
+    if (hVst->getRefreshWindow()) {
+        if (strcmp(mcfxConv_getSofaFilePath(hTVC), "no_file") != 0) {
+            fileComp->setCurrentFile(String(mcfxConv_getSofaFilePath(hTVC)), true, dontSendNotification);
+            refreshCoords();
+            sceneWindow->refreshSceneView();
+        }
+        hVst->setRefreshWindow(false);
+    }
+
     /* check if OSC port has changed */
-    if (hVst->getOscPortID() != te_oscport->getText().getIntValue())
-        hVst->setOscPortID(te_oscport->getText().getIntValue());
+    if (te_oscport->hasKeyboardFocus(true)) {
+        if (hVst->getOscPortID() != te_oscport->getText().getIntValue()) {
+            float paramVal = (float)te_oscport->getText().getIntValue() / 65535.0f;
+            hVst->setParameterNotifyingHost(k_oscPortIdParam, paramVal);
+            // setParameterNotifyingHost will trigger setParameter which calls setOscPortID
+        }
+    } else {
+        if (hVst->getOscPortID() != te_oscport->getText().getIntValue()) {
+            te_oscport->setText(String(hVst->getOscPortID()), dontSendNotification);
+        }
+    }
 }
 
 void PluginEditor::updateCrossfadeRange() {
