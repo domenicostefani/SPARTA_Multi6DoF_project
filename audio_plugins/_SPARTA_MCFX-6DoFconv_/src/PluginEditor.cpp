@@ -193,6 +193,14 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 
     CBviewMode->setBounds (755, 38, 92, 16);
 
+    stlFileComp.reset(new juce::FilenameComponent("stlFileComp", {},
+        true, false, false,
+        "*.stl", {},
+        "Load STL"));
+    addAndMakeVisible(stlFileComp.get());
+    stlFileComp->addListener(this);
+    stlFileComp->setBounds(655, 38, 92, 20);
+
     s_yaw.reset (new juce::Slider ("new slider"));
     addAndMakeVisible (s_yaw.get());
     s_yaw->setRange (-180, 180, 0.01);
@@ -259,6 +267,13 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     TBenableRotation->addListener (this);
 
     TBenableRotation->setBounds (85, 402, 32, 24);
+
+    t_fitSTL.reset (new juce::ToggleButton ("fit STL"));
+    addAndMakeVisible (t_fitSTL.get());
+    t_fitSTL->setButtonText ("Fit STL bounds");
+    t_fitSTL->addListener (this);
+    t_fitSTL->setToggleState (true, juce::dontSendNotification);
+    t_fitSTL->setBounds (550, 38, 100, 20);
 
     label_NOutputs.reset (new juce::Label ("new label",
                                            juce::String()));
@@ -404,7 +419,9 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
 	/* fetch current configuration *///////////////////////////////////////////////////////////////////////////////////
     te_oscport->setText(String(hVst->getOscPortID()), dontSendNotification);
     CBviewMode->addItem(TRANS("Top View"), TOP_VIEW+1); /* must start from 1... */
-    CBviewMode->addItem(TRANS("Side View"), SIDE_VIEW+1);
+    CBviewMode->addItem(TRANS("Rear View"), REAR_VIEW+1);
+    CBviewMode->addItem(TRANS("Left View"), LEFT_VIEW+1);
+    CBviewMode->addItem(TRANS("Right View"), RIGHT_VIEW+1);
     CBviewMode->setSelectedId(TOP_VIEW+1, dontSendNotification);
     s_yaw->setValue(rotator_getYaw(hRot), dontSendNotification);
     s_pitch->setValue(rotator_getPitch(hRot), dontSendNotification);
@@ -418,6 +435,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     sceneWindow.reset (new sceneView(ownerFilter, 440, 432));
     addAndMakeVisible (sceneWindow.get());
     sceneWindow->setViewMode(CBviewMode->getSelectedId()-1);
+    sceneWindow->setFitSTLToBounds(t_fitSTL->getToggleState());
     sceneWindow->setBounds (408, 58, 440, 432);
     refreshSceneViewWindow = true;
 
@@ -505,6 +523,7 @@ PluginEditor::~PluginEditor()
     t_flipPitch = nullptr;
     t_flipRoll = nullptr;
     TBenableRotation = nullptr;
+    t_fitSTL = nullptr;
     label_NOutputs = nullptr;
     label_NIRs = nullptr;
     box_first_part = nullptr;
@@ -842,7 +861,7 @@ void PluginEditor::paint (juce::Graphics& g)
     }
 
     {
-        int x = 415, y = 34, width = 417, height = 31;
+        int x = 415, y = 34, width = 135, height = 31;
         juce::String text (TRANS("Coordinate View [m]"));
         juce::Colour fillColour = juce::Colours::white;
         //[UserPaintCustomArguments] Customize the painting arguments here..
@@ -850,7 +869,7 @@ void PluginEditor::paint (juce::Graphics& g)
         g.setColour (fillColour);
         g.setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Bold"));
         g.drawText (text, x, y, width, height,
-                    juce::Justification::centred, true);
+                    juce::Justification::centredLeft, true);
     }
 
     {
@@ -1522,6 +1541,11 @@ void PluginEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_TBenableRotation] -- add your button handler code here..
         hVst->setEnableRotation(TBenableRotation->getToggleState());
         //[/UserButtonCode_TBenableRotation]
+    }
+    else if (buttonThatWasClicked == t_fitSTL.get())
+    {
+        if (sceneWindow != nullptr)
+            sceneWindow->setFitSTLToBounds(t_fitSTL->getToggleState());
     }
     else if (buttonThatWasClicked == btn_doubleCrossfade.get())
     {

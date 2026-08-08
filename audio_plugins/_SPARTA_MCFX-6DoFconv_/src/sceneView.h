@@ -24,10 +24,13 @@
 #include "JuceHeader.h"
 #include "PluginProcessor.h"
 #include <assert.h>
+#include "STLParser.h"
 
 #define TOP_VIEW ( 0 )
-#define SIDE_VIEW ( 1 )
-#define NUM_VIEW_POINTS ( 2 )
+#define REAR_VIEW ( 1 )
+#define LEFT_VIEW ( 2 )
+#define RIGHT_VIEW ( 3 )
+#define NUM_VIEW_POINTS ( 4 )
 
 //[/Headers]
 
@@ -59,7 +62,7 @@ public:
     }
 
     void setViewMode(int newMode){
-        assert(newMode == TOP_VIEW || newMode == SIDE_VIEW);
+        assert(newMode >= 0 && newMode < NUM_VIEW_POINTS);
         topOrSideView = newMode;
     }
     int getViewMode(){
@@ -73,6 +76,16 @@ public:
     }
     void setDrawTargets(bool newState){
         drawTargets = newState;
+    }
+    void loadSTLFile(const juce::File& file) {
+        stlTriangles = STLParser::parseSTL(file);
+        computeRoomDims();
+        repaint();
+    }
+    void setFitSTLToBounds(bool fit) {
+        fitSTLToBounds = fit;
+        computeRoomDims();
+        repaint();
     }
     //[/UserMethods]
 
@@ -97,6 +110,9 @@ private:
     bool drawDoAs;
     bool drawIntersections;
     bool drawTargets;
+
+    std::vector<STLTriangle> stlTriangles;
+    bool fitSTLToBounds = true;
 
     //[/UserVariables]
 
