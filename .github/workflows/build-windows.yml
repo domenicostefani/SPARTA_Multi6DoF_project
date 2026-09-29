@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
         
@@ -36,7 +36,7 @@ jobs:
       run: cmake --build build --config Release --target sparta_MCFX-6DoFconv_VST
       
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: SPARTA_MCFX-6DoFconv_Windows_VST2
         path: build/audio_plugins/_SPARTA_MCFX-6DoFconv_/*_VST/*.dll
