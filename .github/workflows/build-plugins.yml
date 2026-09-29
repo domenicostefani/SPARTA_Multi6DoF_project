@@ -94,8 +94,8 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: bash
       run: |
-        cp fftw3/fftw3f.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST/
-        cp fftw3/fftw3f.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST3/*.vst3/Contents/x86_64-win/ || cp fftw3/fftw3f.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST3/
+        cp fftw3/libfftw3*.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST/
+        cp fftw3/libfftw3*.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST3/*.vst3/Contents/x86_64-win/ || cp fftw3/libfftw3*.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST3/
         cp ${{ env.MKL_BIN }}/*.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST/
         cp ${{ env.MKL_BIN }}/*.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST3/*.vst3/Contents/x86_64-win/ || cp ${{ env.MKL_BIN }}/*.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST3/
       
