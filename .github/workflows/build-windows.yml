@@ -18,7 +18,8 @@ jobs:
       shell: bash
       run: |
         cd SDKs
-        unzip -q vstsdk3610_11_06_2018_build_37.zip || true
+        curl -L -o vstsdk.zip "https://web.archive.org/web/20181016150224if_/https://download.steinberg.net/sdk_downloads/vstsdk3610_11_06_2018_build_37.zip"
+        unzip -q vstsdk.zip || true
         # If the zip extracts as VST_SDK/VST2_SDK, rename it to VST2_SDK
         if [ -d "VST_SDK/VST2_SDK" ]; then
           mv VST_SDK/VST2_SDK VST2_SDK_tmp
