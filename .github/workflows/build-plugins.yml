@@ -55,10 +55,11 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: bash
       run: |
-        python -m pip install mkl-devel mkl-include
+        python -m pip install mkl mkl-devel mkl-include
         MKL_ROOT=$(python -c "import sysconfig; print(sysconfig.get_paths()['data'].replace(chr(92), '/'))")
         echo "MKL_HEADER_PATH=$MKL_ROOT/Library/include" >> $GITHUB_ENV
         echo "MKL_LIB=$MKL_ROOT/Library/lib/mkl_rt.lib" >> $GITHUB_ENV
+        echo "MKL_BIN=$MKL_ROOT/Library/bin" >> $GITHUB_ENV
 
     - name: Install Ninja (Mac)
       if: matrix.os == 'macos-13'
@@ -89,14 +90,23 @@ jobs:
     - name: Build VST2 and VST3
       run: cmake --build build --config Release --target sparta_MCFX-6DoFconv_VST --target sparta_MCFX-6DoFconv_VST3
       
+    - name: Bundle Windows Dependencies
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: |
+        cp fftw3/fftw3f.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST/
+        cp fftw3/fftw3f.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST3/*.vst3/Contents/x86_64-win/ || cp fftw3/fftw3f.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST3/
+        cp ${{ env.MKL_BIN }}/*.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST/
+        cp ${{ env.MKL_BIN }}/*.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST3/*.vst3/Contents/x86_64-win/ || cp ${{ env.MKL_BIN }}/*.dll build/audio_plugins/_SPARTA_MCFX-6DoFconv_/sparta_MCFX-6DoFconv_artefacts/Release/VST3/
+      
     - name: Upload Artifacts (Windows)
       if: matrix.os == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
         name: plugin-windows
         path: |
-          build/audio_plugins/_SPARTA_MCFX-6DoFconv_/*_artefacts/Release/VST/*.dll
-          build/audio_plugins/_SPARTA_MCFX-6DoFconv_/*_artefacts/Release/VST3/*.vst3
+          build/audio_plugins/_SPARTA_MCFX-6DoFconv_/*_artefacts/Release/VST/*
+          build/audio_plugins/_SPARTA_MCFX-6DoFconv_/*_artefacts/Release/VST3/*
           
     - name: Upload Artifacts (Mac)
       if: matrix.os == 'macos-13'
