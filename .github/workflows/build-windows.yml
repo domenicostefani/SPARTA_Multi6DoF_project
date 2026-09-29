@@ -27,6 +27,13 @@ jobs:
           mv VST2_SDK_tmp VST2_SDK
         fi
         
+    - name: Setup SAF Dependencies
+      shell: bash
+      run: |
+        cd SDKs/Spatial_Audio_Framework
+        curl -L -o dependencies.zip https://github.com/leomccormack/Spatial_Audio_Framework/releases/download/v1.3.0/dependencies.zip
+        unzip -q dependencies.zip
+        
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
       
