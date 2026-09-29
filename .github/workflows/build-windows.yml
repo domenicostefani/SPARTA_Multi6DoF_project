@@ -26,11 +26,24 @@ jobs:
           mv VST2_SDK_tmp VST2_SDK
         fi
         
+    - name: Setup FFTW3
+      shell: cmd
+      run: |
+        curl -L -o fftw.zip http://www.fftw.org/pub/fftw/fftw-3.3.5-dll64.zip
+        mkdir fftw3
+        cd fftw3
+        tar -xf ..\fftw.zip
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        lib /machine:x64 /def:libfftw3f-3.def /out:fftw3f.lib
+        lib /machine:x64 /def:libfftw3-3.def /out:fftw3.lib
+        
     - name: Configure CMake
+      shell: bash
       run: >
         cmake -B build
         -G "Visual Studio 17 2022" -A x64
         -DCMAKE_BUILD_TYPE=Release
+        -DFFTW3_ROOT_DIR="${{ github.workspace }}/fftw3"
         
     - name: Build
       run: cmake --build build --config Release --target sparta_MCFX-6DoFconv_VST
