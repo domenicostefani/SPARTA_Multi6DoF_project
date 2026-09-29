@@ -64,6 +64,7 @@ jobs:
         -DFFTW3_ROOT_DIR="${{ github.workspace }}/fftw3"
         -DINTEL_MKL_HEADER_PATH="${{ env.MKL_HEADER_PATH }}"
         -DINTEL_MKL_LIB="${{ env.MKL_LIB }}"
+        -DSAF_ENABLE_SOFA_READER_MODULE=ON
         
     - name: Build
       run: cmake --build build --config Release --target sparta_MCFX-6DoFconv_VST
