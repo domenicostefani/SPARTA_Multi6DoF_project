@@ -43,7 +43,7 @@ jobs:
       shell: bash
       run: >
         cmake -B build
-        -G "Visual Studio 17 2022" -A x64
+        -G Ninja
         -DCMAKE_BUILD_TYPE=Release
         -DFFTW3_ROOT_DIR="${{ github.workspace }}/fftw3"
         
