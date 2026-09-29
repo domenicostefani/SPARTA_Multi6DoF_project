@@ -85,6 +85,7 @@ jobs:
         -G Ninja
         -DCMAKE_BUILD_TYPE=Release
         -DSAF_ENABLE_SOFA_READER_MODULE=ON
+        -DSAF_PERFORMANCE_LIB=SAF_USE_APPLE_ACCELERATE
         -DCMAKE_OSX_ARCHITECTURES="x86_64"
         
     - name: Build VST2 and VST3
