@@ -444,6 +444,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     sceneWindow->setViewMode(CBviewMode->getSelectedId()-1);
     sceneWindow->setFitSTLToBounds(t_fitSTL->getToggleState());
     sceneWindow->setBounds (408, 58, 440, 432);
+    stlReloadQueued = true;
     refreshSceneViewWindow = true;
 
 
@@ -1602,6 +1603,24 @@ void PluginEditor::buttonClicked (juce::Button* buttonThatWasClicked)
 //[MiscUserCode] You can add your own definitions of your custom methods or any other code here...
 void PluginEditor::timerCallback()
 {
+    if (stlReloadQueued && sceneWindow != nullptr) {
+        const auto lastStlPath = hVst->getLastStlFilePath();
+        if (!lastStlPath.isEmpty() && lastStlPath != "no_file") {
+            const juce::File stlFile(lastStlPath);
+            if (stlFile.existsAsFile()) {
+                sceneWindow->loadSTLFile(stlFile);
+            }
+            else if (!hVst->getStlTriangles().empty()) {
+                sceneWindow->setStlTriangles(hVst->getStlTriangles());
+            }
+        }
+        else if (!hVst->getStlTriangles().empty()) {
+            sceneWindow->setStlTriangles(hVst->getStlTriangles());
+        }
+
+        stlReloadQueued = false;
+    }
+
     /* parameters whos values can change internally should be periodically refreshed */
     s_yaw->setValue(rotator_getYaw(hRot), dontSendNotification);
     s_pitch->setValue(rotator_getPitch(hRot), dontSendNotification);

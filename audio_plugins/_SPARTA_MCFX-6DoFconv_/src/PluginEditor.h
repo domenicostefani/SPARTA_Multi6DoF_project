@@ -92,6 +92,7 @@ private:
     void* hRot;
     void timerCallback() override;
     bool partitionComboboxesSet = false;
+    bool stlReloadQueued = false;
 
     float maximumSafeCrossfadeMS = 0;
     void updateCrossfadeRange();
@@ -163,7 +164,9 @@ private:
          }
          else if (fnComp == stlFileComp.get()) {
              if (sceneWindow != nullptr) {
-                 sceneWindow->loadSTLFile(stlFileComp->getCurrentFile());
+                 const auto stlFile = stlFileComp->getCurrentFile();
+                 sceneWindow->loadSTLFile(stlFile);
+                 hVst->loadStlFileFromPath(stlFile.getFullPathName());
              }
          }
      }

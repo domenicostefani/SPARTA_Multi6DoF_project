@@ -99,6 +99,27 @@ public:
         std::lock_guard<std::mutex> lock(stlMutex);
         return currentStlTriangles;
     }
+    juce::String getLastStlFilePath() const { return lastStlFilePath; }
+    void loadStlFileFromPath(const juce::String& path) {
+        if (path.isEmpty() || path == "no_file") {
+            return;
+        }
+
+        juce::File stlFile(path);
+        if (!stlFile.existsAsFile()) {
+            lastStlFilePath = "no_file";
+            return;
+        }
+
+        auto triangles = STLParser::parseSTL(stlFile);
+        {
+            std::lock_guard<std::mutex> lock(stlMutex);
+            currentStlTriangles = std::move(triangles);
+            stlChanged = true;
+        }
+
+        lastStlFilePath = path;
+    }
     bool popStlChanged() {
         return stlChanged.exchange(false);
     }
@@ -112,6 +133,7 @@ public:
 private:
     void* hMCFXCnv;         /* MCFX wrapper handle */
     std::vector<STLTriangle> currentStlTriangles;
+    juce::String lastStlFilePath { "no_file" };
     std::mutex stlMutex;
     
     juce::String lastOscLog;
