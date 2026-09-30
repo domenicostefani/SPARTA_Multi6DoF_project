@@ -90,6 +90,21 @@ public:
     int getOscPortID() { return osc_port_ID; }
     bool getOscPortConnected() { return osc_connected; }
     
+    juce::String getLastStlFilePath() {
+        std::lock_guard<std::mutex> lock(stlMutex);
+        return lastStlFilePath;
+    }
+    
+    void loadStl(const juce::File& stlFile) {
+        if (stlFile.existsAsFile()) {
+            auto triangles = STLParser::parseSTL(stlFile);
+            std::lock_guard<std::mutex> lock(stlMutex);
+            currentStlTriangles = std::move(triangles);
+            lastStlFilePath = stlFile.getFullPathName();
+            stlChanged = true;
+        }
+    }
+
     std::vector<STLTriangle> getStlTriangles() {
         std::lock_guard<std::mutex> lock(stlMutex);
         return currentStlTriangles;
@@ -107,6 +122,7 @@ public:
 private:
     void* hMCFXCnv;         /* MCFX wrapper handle */
     std::vector<STLTriangle> currentStlTriangles;
+    juce::String lastStlFilePath;
     std::mutex stlMutex;
     
     juce::String lastOscLog;

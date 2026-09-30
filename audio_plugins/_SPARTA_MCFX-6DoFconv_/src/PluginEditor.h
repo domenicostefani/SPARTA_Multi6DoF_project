@@ -162,8 +162,8 @@ private:
              refreshCoords();
          }
          else if (fnComp == stlFileComp.get()) {
-             if (sceneWindow != nullptr) {
-                 sceneWindow->loadSTLFile(stlFileComp->getCurrentFile());
+             if (hVst != nullptr) {
+                 hVst->loadStl(stlFileComp->getCurrentFile());
              }
          }
      }

@@ -184,13 +184,7 @@ void PluginProcessor::oscMessageReceived(const OSCMessage& message)
                 DBG("STL file does not exist!");
                 return;
             }
-            auto triangles = STLParser::parseSTL(stlFile);
-            DBG("Parsed " + String(triangles.size()) + " triangles from STL");
-            {
-                std::lock_guard<std::mutex> lock(stlMutex);
-                currentStlTriangles = std::move(triangles);
-                stlChanged = true;
-            }
+            loadStl(stlFile);
         }
         return;
     }
@@ -578,6 +572,7 @@ void PluginProcessor::getStateInformation (juce::MemoryBlock& destData)
     /* Create an outer XML element.. */
     XmlElement xml("SAFMCFXAUDIOPLUGINSETTINGS");
     xml.setAttribute("LastSofaFilePath", mcfxConv_getSofaFilePath(hMCFXCnv));
+    xml.setAttribute("LastStlFilePath", getLastStlFilePath());
     xml.setAttribute("ReceiverX", mcfxConv_getTargetPosition(hMCFXCnv, 0));
     xml.setAttribute("ReceiverY", mcfxConv_getTargetPosition(hMCFXCnv, 1));
     xml.setAttribute("ReceiverZ", mcfxConv_getTargetPosition(hMCFXCnv, 2));
@@ -603,6 +598,12 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes) {
                 String directory = xmlState->getStringAttribute("LastSofaFilePath", "no_file");
                 const char* new_cstring = (const char*)directory.toUTF8();
                 mcfxConv_setSofaFilePath(hMCFXCnv, new_cstring);
+            }
+            if (xmlState->hasAttribute("LastStlFilePath")) {
+                String stlPath = xmlState->getStringAttribute("LastStlFilePath", "");
+                if (stlPath.isNotEmpty()) {
+                    loadStl(juce::File(stlPath));
+                }
             }
             if (xmlState->hasAttribute("ReceiverX")) {
                 mcfxConv_setTargetPosition(hMCFXCnv, (float)xmlState->getDoubleAttribute("ReceiverX"), 0);

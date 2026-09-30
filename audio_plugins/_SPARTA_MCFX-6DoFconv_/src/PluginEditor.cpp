@@ -444,6 +444,12 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     sceneWindow->setViewMode(CBviewMode->getSelectedId()-1);
     sceneWindow->setFitSTLToBounds(t_fitSTL->getToggleState());
     sceneWindow->setBounds (408, 58, 440, 432);
+    
+    if (hVst->getLastStlFilePath().isNotEmpty()) {
+        stlFileComp->setCurrentFile(juce::File(hVst->getLastStlFilePath()), true, dontSendNotification);
+    }
+    sceneWindow->setStlTriangles(hVst->getStlTriangles());
+    
     refreshSceneViewWindow = true;
 
 
