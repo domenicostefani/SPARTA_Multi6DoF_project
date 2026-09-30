@@ -42,7 +42,8 @@ enum {
     k_room_size_x,
     k_room_size_y,
     k_room_size_z,
-	k_oscPortIdParam,  // OSC port ID parameter
+    k_oscPortIdParam,
+
 	k_param_workaround, // needed to ensure that when a parameter is set by the host, the "setParameter()" method is called
 
 	k_NumOfParameters
@@ -150,9 +151,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
 
-	    bool isEditorOpen() const {
-        return getActiveEditor() != nullptr;
-    }
+	bool isEditorOpen() const { return getActiveEditor() != nullptr; }
 
 
     //==============================================================================
