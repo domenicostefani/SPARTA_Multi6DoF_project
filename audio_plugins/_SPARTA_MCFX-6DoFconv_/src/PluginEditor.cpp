@@ -396,6 +396,7 @@ PluginEditor::PluginEditor (PluginProcessor* ownerFilter)
     #endif
 
 	hVst = ownerFilter;
+     oscLogLabel->setText("OSC Log: " + hVst->getLastOscLog(), dontSendNotification);
     hTVC = hVst->getFXHandle();
     hRot = hVst->getFXHandle_rot();
 
@@ -1607,6 +1608,7 @@ void PluginEditor::timerCallback()
         const auto lastStlPath = hVst->getLastStlFilePath();
         if (!lastStlPath.isEmpty() && lastStlPath != "no_file") {
             const juce::File stlFile(lastStlPath);
+            stlFileComp->setCurrentFile(stlFile, true, dontSendNotification);
             if (stlFile.existsAsFile()) {
                 sceneWindow->loadSTLFile(stlFile);
             }
