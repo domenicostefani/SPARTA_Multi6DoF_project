@@ -80,6 +80,9 @@ PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MCFX_MtxConv.h
 )
 
+add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_SOURCE_DIR}/src/PluginEditor.cpp")
+
 # Add any extra JUCE-specific pre-processor definitions
 target_compile_definitions(${PROJECT_NAME}
 PUBLIC 
